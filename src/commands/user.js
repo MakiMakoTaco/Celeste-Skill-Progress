@@ -6,106 +6,7 @@ const {
 	ComponentType,
 } = require('discord.js');
 const processSheets = require('../utils/processSheets');
-
-const updateLabels = (
-	embeds,
-	pageNumber,
-	challengeNumber,
-	sheetNumber,
-	currentPage,
-	previousChallenge,
-	currentChallenge,
-	nextChallenge,
-	previousSheet,
-	currentSheet,
-	nextSheet,
-) => {
-	const pageLabel = `${pageNumber + 1}/${
-		embeds[sheetNumber][challengeNumber].length
-	}`;
-
-	const challengeNames = [
-		embeds[sheetNumber][
-			challengeNumber <= 0
-				? embeds[sheetNumber].length - 1
-				: challengeNumber - 1
-		][0].fields[0].name,
-		embeds[sheetNumber][challengeNumber][0].fields[0].name,
-		embeds[sheetNumber][
-			challengeNumber >= embeds[sheetNumber].length - 1
-				? 0
-				: challengeNumber + 1
-		][0].fields[0].name,
-	];
-
-	let previousChallengeName, currentChallengeName, nextChallengeName;
-	for (let i = 0; i < challengeNames.length; i++) {
-		const splitName = challengeNames[i].split(':');
-		const cleanName =
-			splitName.length > 2
-				? splitName[1].replaceAll('*', '')
-				: splitName[0].replaceAll('*', '');
-
-		switch (i) {
-			case 0:
-				previousChallengeName = cleanName;
-				break;
-			case 1:
-				currentChallengeName = cleanName;
-				break;
-			case 2:
-				nextChallengeName = cleanName;
-		}
-	}
-
-	const sheetNames = [
-		embeds[sheetNumber <= 0 ? embeds.length - 1 : sheetNumber - 1][0][0]
-			.description,
-		embeds[sheetNumber][0][0].description,
-		embeds[sheetNumber >= embeds.length - 1 ? 0 : sheetNumber + 1][0][0]
-			.description,
-	];
-
-	let previousSheetName, currentSheetName, nextSheetName;
-	for (let i = 0; i < sheetNames.length; i++) {
-		const splitName = sheetNames[i].split(':');
-		const cleanName =
-			splitName.length > 2
-				? splitName[1].replaceAll('*', '')
-				: splitName[0].replaceAll('*', '');
-
-		switch (i) {
-			case 0:
-				previousSheetName = cleanName;
-				break;
-			case 1:
-				currentSheetName = cleanName;
-				break;
-			case 2:
-				nextSheetName = cleanName;
-		}
-	}
-
-	const labels = [
-		pageLabel,
-		previousChallengeName,
-		currentChallengeName,
-		nextChallengeName,
-		previousSheetName,
-		currentSheetName,
-		nextSheetName,
-	];
-
-	currentPage.setLabel(labels[0]);
-	previousChallenge.setLabel(labels[1]);
-	currentChallenge.setLabel(labels[2]);
-	nextChallenge.setLabel(labels[3]);
-	previousSheet.setLabel(labels[4]);
-	currentSheet.setLabel(labels[5]);
-	nextSheet.setLabel(labels[6]);
-
-	return labels;
-};
+const updateLabels = require('../utils/updateLabels');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -272,19 +173,19 @@ module.exports = {
 				);
 
 				// Create rows
-				const pageRow = new ActionRowBuilder().addComponents(
+				let pageRow = new ActionRowBuilder().addComponents(
 					backPage,
 					currentPage,
 					forwardPage,
 				);
 
-				const challengeRow = new ActionRowBuilder().addComponents(
+				let challengeRow = new ActionRowBuilder().addComponents(
 					backChallenge,
 					currentChallenge,
 					forwardChallenge,
 				);
 
-				const sheetRow = new ActionRowBuilder().addComponents(
+				let sheetRow = new ActionRowBuilder().addComponents(
 					backSheet,
 					currentSheet,
 					forwardSheet,
@@ -306,6 +207,8 @@ module.exports = {
 				});
 
 				collector.on('collect', (interaction) => {
+					const oldSheetNumber = sheetNumber || 0;
+
 					switch (interaction.customId) {
 						case 'backPage':
 							pageNumber--;
@@ -348,7 +251,10 @@ module.exports = {
 								sheetNumber = embeds.length - 1;
 							}
 
-							if (challengeNumber >= embeds[sheetNumber].length) {
+							if (
+								challengeNumber >= embeds[sheetNumber].length ||
+								embeds[oldSheetNumber].length !== embeds[sheetNumber].length
+							) {
 								challengeNumber = 0;
 							}
 
@@ -361,7 +267,10 @@ module.exports = {
 								sheetNumber = 0;
 							}
 
-							if (challengeNumber >= embeds[sheetNumber].length) {
+							if (
+								challengeNumber >= embeds[sheetNumber].length ||
+								embeds[oldSheetNumber].length !== embeds[sheetNumber].length
+							) {
 								challengeNumber = 0;
 							}
 
@@ -383,6 +292,76 @@ module.exports = {
 						currentSheet,
 						forwardSheet,
 					);
+
+					// Adjust page row depending on the number of pages
+					if (
+						embeds[sheetNumber][challengeNumber].length > 2
+						// ||
+						// oldSheetNumber !== sheetNumber
+					) {
+						pageRow.setComponents(backPage, currentPage, forwardPage);
+						// .components.forEach((button) => {
+						// 	if (button.data.custom_id !== 'currentChallenge') {
+						// 		button.setStyle(ButtonStyle.Primary).setDisabled(false);
+						// 	} else {
+						// 		button.setStyle(ButtonStyle.Secondary).setDisabled(true);
+						// 	}
+						// });
+					} else {
+						if (embeds[sheetNumber][challengeNumber].length === 1) {
+							pageRow.setComponents(currentPage);
+						} else {
+							if (pageNumber === 0) {
+								pageRow.setComponents(currentPage, forwardPage);
+							} else {
+								pageRow.setComponents(backPage, currentPage);
+							}
+						}
+					}
+
+					// Adjust challenge row depending on the number of challenges
+					if (
+						embeds[sheetNumber].length !== 3 ||
+						oldSheetNumber !== sheetNumber
+					) {
+						challengeRow
+							.setComponents(backChallenge, currentChallenge, forwardChallenge)
+							.components.forEach((button) => {
+								if (button.data.custom_id !== 'currentChallenge') {
+									button.setStyle(ButtonStyle.Primary).setDisabled(false);
+								} else {
+									button.setStyle(ButtonStyle.Secondary).setDisabled(true);
+								}
+							});
+					}
+
+					if (embeds[sheetNumber].length <= 3) {
+						if (embeds[sheetNumber].length === 1) {
+							challengeRow.components.shift().pop();
+						} else if (embeds[sheetNumber].length === 2) {
+							challengeRow.components.shift();
+
+							if (oldSheetNumber === sheetNumber) {
+								challengeRow.components.reverse();
+							}
+						} else {
+							if (challengeNumber === 0) {
+								challengeRow.components.shift();
+								challengeRow.components.push(backChallenge);
+							} else if (challengeNumber === 2) {
+								challengeRow.components.pop();
+								challengeRow.components.unshift(forwardChallenge);
+							}
+						}
+
+						challengeRow.components.forEach((button) =>
+							button.setStyle(ButtonStyle.Primary).setDisabled(false),
+						);
+
+						challengeRow.components[challengeNumber]
+							.setStyle(ButtonStyle.Secondary)
+							.setDisabled(true);
+					}
 
 					// Update embed
 					page = embeds[sheetNumber][challengeNumber][pageNumber];
