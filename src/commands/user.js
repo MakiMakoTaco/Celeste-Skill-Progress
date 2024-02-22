@@ -6,7 +6,12 @@ const {
 	ComponentType,
 } = require('discord.js');
 const processSheets = require('../utils/processSheets');
-const updateLabels = require('../utils/updateLabels');
+const {
+	createButtons,
+	createRows,
+	updateLabels,
+	updateRows,
+} = require('../utils/updateComponents');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -100,98 +105,126 @@ module.exports = {
 					embeds.push(sheetEmbeds);
 				}
 
-				// Create buttons to navigate through sheets and pages
-				// Page buttons
-				const backPage = new ButtonBuilder()
-					.setCustomId('backPage')
-					.setLabel('PREVIOUS PAGE')
-					.setStyle(ButtonStyle.Primary);
-
-				const currentPage = new ButtonBuilder()
-					.setCustomId('currentPage')
-					.setLabel('CURRENT PAGE')
-					.setStyle(ButtonStyle.Secondary)
-					.setDisabled(true);
-
-				const forwardPage = new ButtonBuilder()
-					.setCustomId('forwardPage')
-					.setLabel('NEXT PAGE')
-					.setStyle(ButtonStyle.Primary);
-
-				// Category buttons
-				const backChallenge = new ButtonBuilder()
-					.setCustomId('backChallenge')
-					.setLabel('PREVIOUS CHALLENGE')
-					.setStyle(ButtonStyle.Primary);
-
-				const currentChallenge = new ButtonBuilder()
-					.setCustomId('currentChallenge')
-					.setLabel('CURRENT CHALLENGE')
-					.setStyle(ButtonStyle.Secondary)
-					.setDisabled(true);
-
-				const forwardChallenge = new ButtonBuilder()
-					.setCustomId('forwardChallenge')
-					.setLabel('NEXT CHALLENGE')
-					.setStyle(ButtonStyle.Primary);
-
-				// Sheet buttons
-				const backSheet = new ButtonBuilder()
-					.setCustomId('backSheet')
-					.setLabel('PREVIOUS SHEET')
-					.setStyle(ButtonStyle.Primary);
-
-				const currentSheet = new ButtonBuilder()
-					.setCustomId('currentSheet')
-					.setLabel('CURRENT SHEET')
-					.setStyle(ButtonStyle.Secondary)
-					.setDisabled(true);
-
-				const forwardSheet = new ButtonBuilder()
-					.setCustomId('forwardSheet')
-					.setLabel('NEXT SHEET')
-					.setStyle(ButtonStyle.Primary);
-
 				let pageNumber = 0;
 				let challengeNumber = 0;
 				let sheetNumber = 0;
 				let page = embeds[sheetNumber][challengeNumber][pageNumber];
 
-				// Set labels
-				updateLabels(
+				// Create buttons to navigate through sheets and pages
+				const buttons = createButtons(
+					pageNumber,
+					challengeNumber,
+					sheetNumber,
+					page,
+				);
+				// console.log(buttons);
+
+				let rows = createRows(buttons);
+				// console.log(rows.pageRow.components);
+
+				rows = updateRows(
+					rows,
+					buttons,
 					embeds,
 					pageNumber,
 					challengeNumber,
 					sheetNumber,
-					currentPage,
-					backChallenge,
-					currentChallenge,
-					forwardChallenge,
-					backSheet,
-					currentSheet,
-					forwardSheet,
+					null,
 				);
+				// console.log(rows.pageRow.components);
 
-				// Create rows
-				let pageRow = new ActionRowBuilder().addComponents(
-					backPage,
-					currentPage,
-					forwardPage,
+				// // Page buttons
+				// const backPage = new ButtonBuilder()
+				// 	.setCustomId('backPage')
+				// 	.setLabel('PREVIOUS PAGE')
+				// 	.setStyle(ButtonStyle.Primary);
+
+				// const currentPage = new ButtonBuilder()
+				// 	.setCustomId('currentPage')
+				// 	.setLabel('CURRENT PAGE')
+				// 	.setStyle(ButtonStyle.Secondary)
+				// 	.setDisabled(true);
+
+				// const forwardPage = new ButtonBuilder()
+				// 	.setCustomId('forwardPage')
+				// 	.setLabel('NEXT PAGE')
+				// 	.setStyle(ButtonStyle.Primary);
+
+				// // Category buttons
+				// const backChallenge = new ButtonBuilder()
+				// 	.setCustomId('backChallenge')
+				// 	.setLabel('PREVIOUS CHALLENGE')
+				// 	.setStyle(ButtonStyle.Primary);
+
+				// const currentChallenge = new ButtonBuilder()
+				// 	.setCustomId('currentChallenge')
+				// 	.setLabel('CURRENT CHALLENGE')
+				// 	.setStyle(ButtonStyle.Secondary)
+				// 	.setDisabled(true);
+
+				// const forwardChallenge = new ButtonBuilder()
+				// 	.setCustomId('forwardChallenge')
+				// 	.setLabel('NEXT CHALLENGE')
+				// 	.setStyle(ButtonStyle.Primary);
+
+				// // Sheet buttons
+				// const backSheet = new ButtonBuilder()
+				// 	.setCustomId('backSheet')
+				// 	.setLabel('PREVIOUS SHEET')
+				// 	.setStyle(ButtonStyle.Primary);
+
+				// const currentSheet = new ButtonBuilder()
+				// 	.setCustomId('currentSheet')
+				// 	.setLabel('CURRENT SHEET')
+				// 	.setStyle(ButtonStyle.Secondary)
+				// 	.setDisabled(true);
+
+				// const forwardSheet = new ButtonBuilder()
+				// 	.setCustomId('forwardSheet')
+				// 	.setLabel('NEXT SHEET')
+				// 	.setStyle(ButtonStyle.Primary);
+
+				// Set labels
+				const labels = updateLabels(
+					embeds,
+					pageNumber,
+					challengeNumber,
+					sheetNumber,
+					buttons,
+					// currentPage,
+					// backChallenge,
+					// currentChallenge,
+					// forwardChallenge,
+					// backSheet,
+					// currentSheet,
+					// forwardSheet,
 				);
+				// console.log(labels);
 
-				let challengeRow = new ActionRowBuilder().addComponents(
-					backChallenge,
-					currentChallenge,
-					forwardChallenge,
-				);
+				// rows.pageRow.components[1].setLabel()
 
-				let sheetRow = new ActionRowBuilder().addComponents(
-					backSheet,
-					currentSheet,
-					forwardSheet,
-				);
+				// let [pageRow, challengeRow, sheetRow] = createRows();
+				// // Create rows
+				// let pageRow = new ActionRowBuilder().addComponents(
+				// 	backPage,
+				// 	currentPage,
+				// 	forwardPage,
+				// );
 
-				const allRows = [pageRow, challengeRow, sheetRow];
+				// let challengeRow = new ActionRowBuilder().addComponents(
+				// 	backChallenge,
+				// 	currentChallenge,
+				// 	forwardChallenge,
+				// );
+
+				// let sheetRow = new ActionRowBuilder().addComponents(
+				// 	backSheet,
+				// 	currentSheet,
+				// 	forwardSheet,
+				// );
+
+				// console.log(rows);
+				const allRows = [rows.pageRow, rows.challengeRow, rows.sheetRow];
 
 				const reply = await interaction.editReply({
 					embeds: [page],
@@ -293,75 +326,66 @@ module.exports = {
 						forwardSheet,
 					);
 
-					// Adjust page row depending on the number of pages
-					if (
-						embeds[sheetNumber][challengeNumber].length > 2
-						// ||
-						// oldSheetNumber !== sheetNumber
-					) {
-						pageRow.setComponents(backPage, currentPage, forwardPage);
-						// .components.forEach((button) => {
-						// 	if (button.data.custom_id !== 'currentChallenge') {
-						// 		button.setStyle(ButtonStyle.Primary).setDisabled(false);
-						// 	} else {
-						// 		button.setStyle(ButtonStyle.Secondary).setDisabled(true);
-						// 	}
-						// });
-					} else {
-						if (embeds[sheetNumber][challengeNumber].length === 1) {
-							pageRow.setComponents(currentPage);
-						} else {
-							if (pageNumber === 0) {
-								pageRow.setComponents(currentPage, forwardPage);
-							} else {
-								pageRow.setComponents(backPage, currentPage);
-							}
-						}
-					}
+					// // Adjust page row depending on the number of pages
+					// if (
+					// 	embeds[sheetNumber][challengeNumber].length > 2
+					// ) {
+					// 	pageRow.setComponents(backPage, currentPage, forwardPage);
+					// } else {
+					// 	if (embeds[sheetNumber][challengeNumber].length === 1) {
+					// 		pageRow.setComponents(currentPage);
+					// 	} else {
+					// 		if (pageNumber === 0) {
+					// 			pageRow.setComponents(currentPage, forwardPage);
+					// 		} else {
+					// 			pageRow.setComponents(backPage, currentPage);
+					// 		}
+					// 	}
+					// }
 
-					// Adjust challenge row depending on the number of challenges
-					if (
-						embeds[sheetNumber].length !== 3 ||
-						oldSheetNumber !== sheetNumber
-					) {
-						challengeRow
-							.setComponents(backChallenge, currentChallenge, forwardChallenge)
-							.components.forEach((button) => {
-								if (button.data.custom_id !== 'currentChallenge') {
-									button.setStyle(ButtonStyle.Primary).setDisabled(false);
-								} else {
-									button.setStyle(ButtonStyle.Secondary).setDisabled(true);
-								}
-							});
-					}
+					// // Adjust challenge row depending on the number of challenges
+					// if (
+					// 	embeds[sheetNumber].length !== 3 ||
+					// 	oldSheetNumber !== sheetNumber
+					// ) {
+					// 	challengeRow
+					// 		.setComponents(backChallenge, currentChallenge, forwardChallenge)
+					// 		.components.forEach((button) => {
+					// 			if (button.data.custom_id !== 'currentChallenge') {
+					// 				button.setStyle(ButtonStyle.Primary).setDisabled(false);
+					// 			} else {
+					// 				button.setStyle(ButtonStyle.Secondary).setDisabled(true);
+					// 			}
+					// 		});
+					// }
 
-					if (embeds[sheetNumber].length <= 3) {
-						if (embeds[sheetNumber].length === 1) {
-							challengeRow.components.shift().pop();
-						} else if (embeds[sheetNumber].length === 2) {
-							challengeRow.components.shift();
+					// if (embeds[sheetNumber].length <= 3) {
+					// 	if (embeds[sheetNumber].length === 1) {
+					// 		challengeRow.components.shift().pop();
+					// 	} else if (embeds[sheetNumber].length === 2) {
+					// 		challengeRow.components.shift();
 
-							if (oldSheetNumber === sheetNumber) {
-								challengeRow.components.reverse();
-							}
-						} else {
-							if (challengeNumber === 0) {
-								challengeRow.components.shift();
-								challengeRow.components.push(backChallenge);
-							} else if (challengeNumber === 2) {
-								challengeRow.components.pop();
-								challengeRow.components.unshift(forwardChallenge);
-							}
-						}
+					// 		if (oldSheetNumber === sheetNumber) {
+					// 			challengeRow.components.reverse();
+					// 		}
+					// 	} else {
+					// 		if (challengeNumber === 0) {
+					// 			challengeRow.components.shift();
+					// 			challengeRow.components.push(backChallenge);
+					// 		} else if (challengeNumber === 2) {
+					// 			challengeRow.components.pop();
+					// 			challengeRow.components.unshift(forwardChallenge);
+					// 		}
+					// 	}
 
-						challengeRow.components.forEach((button) =>
-							button.setStyle(ButtonStyle.Primary).setDisabled(false),
-						);
+					// 	challengeRow.components.forEach((button) =>
+					// 		button.setStyle(ButtonStyle.Primary).setDisabled(false),
+					// 	);
 
-						challengeRow.components[challengeNumber]
-							.setStyle(ButtonStyle.Secondary)
-							.setDisabled(true);
-					}
+					// 	challengeRow.components[challengeNumber]
+					// 		.setStyle(ButtonStyle.Secondary)
+					// 		.setDisabled(true);
+					// }
 
 					// Update embed
 					page = embeds[sheetNumber][challengeNumber][pageNumber];
