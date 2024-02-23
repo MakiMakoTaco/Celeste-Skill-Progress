@@ -52,26 +52,26 @@ function createButtons() {
 		.setLabel('NEXT SHEET')
 		.setStyle(ButtonStyle.Primary);
 
-	// const allStats = new ButtonBuilder()
-	// 	.setCustomId('allStats')
-	// 	.setLabel('ALL STATS')
-	// 	.setStyle(ButtonStyle.Primary);
+	const allStats = new ButtonBuilder()
+		.setCustomId('all')
+		.setLabel('EVERYTHING')
+		.setStyle(ButtonStyle.Primary);
 
-	// const clears = new ButtonBuilder()
-	// 	.setCustomId('clears')
-	// 	.setLabel('CLEAR STATS')
-	// 	.setStyle(ButtonStyle.Primary);
+	const clears = new ButtonBuilder()
+		.setCustomId('cleared')
+		.setLabel('CLEARS')
+		.setStyle(ButtonStyle.Primary);
 
-	// const uncleared = new ButtonBuilder()
-	// 	.setCustomId('uncleared')
-	// 	.setLabel('UNCLEARED STATS')
-	// 	.setStyle(ButtonStyle.Primary);
+	const uncleared = new ButtonBuilder()
+		.setCustomId('uncleared')
+		.setLabel('NOT CLEARED')
+		.setStyle(ButtonStyle.Primary);
 
 	return {
 		page: [backPage, currentPage, forwardPage],
 		challenge: [challenge1, challenge2, challenge3],
 		sheet: [sheet1, sheet2, sheet3],
-		// clears: [allStats, clears, uncleared]
+		clears: [allStats, clears, uncleared],
 	};
 }
 
@@ -94,19 +94,20 @@ function createRows(buttons) {
 		buttons.sheet[2],
 	);
 
-	// const statsRow = new ActionRowBuilder().addComponents(
-	// 	buttons.clears[0],
-	// 	buttons.clears[1],
-	// 	buttons.clears[2],
-	// );
+	const statsRow = new ActionRowBuilder().addComponents(
+		buttons.clears[0],
+		buttons.clears[1],
+		buttons.clears[2],
+	);
 
-	return [pageRow, challengeRow, sheetRow]; //, statsRow];
+	return [pageRow, challengeRow, sheetRow, statsRow];
 }
 
 function updateRows(
 	rows,
 	buttons,
 	embeds,
+	clearOption,
 	pageNumber,
 	challengeNumber,
 	sheetNumber,
@@ -214,6 +215,16 @@ function updateRows(
 			.setDisabled(true);
 	}
 
+	rows[3]
+		.setComponents(buttons.clears[0], buttons.clears[1], buttons.clears[2])
+		.components.forEach((button) => {
+			if (button.data.custom_id !== clearOption) {
+				button.setStyle(ButtonStyle.Primary).setDisabled(false);
+			} else {
+				button.setStyle(ButtonStyle.Secondary).setDisabled(true);
+			}
+		});
+
 	return rows;
 }
 
@@ -227,11 +238,6 @@ function updateLabels(
 	const pageLabel = `${pageNumber + 1}/${
 		embeds[sheetNumber][challengeNumber].length
 	}`;
-
-	console.log('Sheet Number:', sheetNumber);
-	console.log('Challenge Number:', challengeNumber);
-	console.log('Page Number:', pageNumber);
-	// console.log('Embeds:', embeds);
 
 	const challengeNames = [
 		embeds[sheetNumber][

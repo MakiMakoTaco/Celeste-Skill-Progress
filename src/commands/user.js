@@ -39,7 +39,7 @@ module.exports = {
 
 		const startPos = [];
 		const start = interaction.options?.getString('start');
-		const clearOption = interaction.options?.getString('clears') || 'all';
+		let clearOption = interaction.options?.getString('clears') || 'all';
 
 		if (start) {
 			start.split(', ').forEach((index) => {
@@ -55,7 +55,7 @@ module.exports = {
 
 			const userData = await processSheets.getUserData(username);
 
-			if (!userData) {
+			if (!userData || userData.totalClears === 0) {
 				interaction.editReply(
 					`Could not find ${username}. Make sure you have spelt the name correctly, if you are on the google sheets but still failing to appear please contact \`hyrulemaki\``,
 				);
@@ -68,7 +68,11 @@ module.exports = {
 					const sheetClearedEmbeds = [];
 					const sheetUnclearedEmbeds = [];
 
-					const title = `${userData.username} has cleared ${userData.totalClears} out of ${userData.totalMods} total mods`;
+					const title = `${userData.username} has cleared ${
+						userData.totalClears
+					} out of ${userData.totalMods} total mods (${
+						userData.totalMods - userData.totalClears
+					} left)`;
 					const description = `**${sheet.name}**: ${sheet.totalClears}/${sheet.totalMods} clears`;
 
 					for (const challenge of sheet.challenges) {
@@ -191,12 +195,6 @@ module.exports = {
 						}
 					}
 
-					console.log(
-						sheetEmbeds.length,
-						sheetClearedEmbeds.length,
-						sheetUnclearedEmbeds.length,
-					);
-
 					embeds.all.push(sheetEmbeds);
 					if (sheetClearedEmbeds?.length > 0) {
 						embeds.cleared.push(sheetClearedEmbeds);
@@ -205,27 +203,6 @@ module.exports = {
 						embeds.uncleared.push(sheetUnclearedEmbeds);
 					}
 				}
-
-				console.log(
-					'Embed lengths:',
-					embeds.all.length,
-					embeds.cleared.length,
-					embeds.uncleared.length,
-				);
-
-				console.log(
-					'Embed first index lengths:',
-					embeds.all[0].length,
-					embeds.cleared[0].length,
-					embeds.uncleared[0].length,
-				);
-
-				console.log(
-					'Embed second index lengths:',
-					embeds.all[0]?.[0]?.length,
-					embeds.cleared[0]?.[0]?.length,
-					embeds.uncleared[0]?.[0]?.length,
-				);
 
 				if (embeds.cleared.length === 0) {
 					embeds.cleared.push({ title: 'No cleared mods' });
@@ -237,15 +214,7 @@ module.exports = {
 					});
 				}
 
-				// let currentEmbed = embeds[clearOption];
-				let currentEmbed;
-				if (clearOption === 'cleared') {
-					currentEmbed = embeds.cleared;
-				} else if (clearOption === 'uncleared') {
-					currentEmbed = embeds.uncleared;
-				} else {
-					currentEmbed = embeds.all;
-				}
+				let currentEmbed = embeds[clearOption];
 
 				let sheetNumber = startPos[0] > currentEmbed.length ? 0 : startPos[0];
 				let challengeNumber =
@@ -269,6 +238,7 @@ module.exports = {
 					rows,
 					buttons,
 					currentEmbed,
+					clearOption,
 					pageNumber,
 					challengeNumber,
 					sheetNumber,
@@ -372,7 +342,18 @@ module.exports = {
 
 							pageNumber = 0;
 							break;
+						case 'all':
+							clearOption = 'all';
+							break;
+						case 'cleared':
+							clearOption = 'cleared';
+							break;
+						case 'uncleared':
+							clearOption = 'uncleared';
+							break;
 					}
+
+					currentEmbed = embeds[clearOption];
 
 					// Update labels and rows
 					updateLabels(
@@ -387,6 +368,7 @@ module.exports = {
 						rows,
 						buttons,
 						currentEmbed,
+						clearOption,
 						pageNumber,
 						challengeNumber,
 						sheetNumber,
