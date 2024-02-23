@@ -36,26 +36,42 @@ function createButtons() {
 		.setStyle(ButtonStyle.Primary);
 
 	// Sheet buttons
-	const backSheet = new ButtonBuilder()
-		.setCustomId('backSheet')
+	const sheet1 = new ButtonBuilder()
+		.setCustomId('sheet1')
 		.setLabel('PREVIOUS SHEET')
 		.setStyle(ButtonStyle.Primary);
 
-	const currentSheet = new ButtonBuilder()
-		.setCustomId('currentSheet')
+	const sheet2 = new ButtonBuilder()
+		.setCustomId('sheet2')
 		.setLabel('CURRENT SHEET')
 		.setStyle(ButtonStyle.Secondary)
 		.setDisabled(true);
 
-	const forwardSheet = new ButtonBuilder()
-		.setCustomId('forwardSheet')
+	const sheet3 = new ButtonBuilder()
+		.setCustomId('sheet3')
 		.setLabel('NEXT SHEET')
 		.setStyle(ButtonStyle.Primary);
+
+	// const allStats = new ButtonBuilder()
+	// 	.setCustomId('allStats')
+	// 	.setLabel('ALL STATS')
+	// 	.setStyle(ButtonStyle.Primary);
+
+	// const clears = new ButtonBuilder()
+	// 	.setCustomId('clears')
+	// 	.setLabel('CLEAR STATS')
+	// 	.setStyle(ButtonStyle.Primary);
+
+	// const uncleared = new ButtonBuilder()
+	// 	.setCustomId('uncleared')
+	// 	.setLabel('UNCLEARED STATS')
+	// 	.setStyle(ButtonStyle.Primary);
 
 	return {
 		page: [backPage, currentPage, forwardPage],
 		challenge: [challenge1, challenge2, challenge3],
-		sheet: [backSheet, currentSheet, forwardSheet],
+		sheet: [sheet1, sheet2, sheet3],
+		// clears: [allStats, clears, uncleared]
 	};
 }
 
@@ -78,7 +94,13 @@ function createRows(buttons) {
 		buttons.sheet[2],
 	);
 
-	return [pageRow, challengeRow, sheetRow];
+	// const statsRow = new ActionRowBuilder().addComponents(
+	// 	buttons.clears[0],
+	// 	buttons.clears[1],
+	// 	buttons.clears[2],
+	// );
+
+	return [pageRow, challengeRow, sheetRow]; //, statsRow];
 }
 
 function updateRows(
@@ -124,7 +146,8 @@ function updateRows(
 
 	if (embeds[sheetNumber].length <= 3) {
 		if (embeds[sheetNumber].length === 1) {
-			rows[1].components.shift().pop();
+			rows[1].components.shift();
+			rows[1].components.pop();
 		} else if (embeds[sheetNumber].length === 2) {
 			if (challengeNumber === 0) {
 				rows[1].components.shift();
@@ -150,6 +173,47 @@ function updateRows(
 			.setDisabled(true);
 	}
 
+	rows[2]
+		.setComponents(buttons.sheet[0], buttons.sheet[1], buttons.sheet[2])
+		.components.forEach((button) => {
+			if (button.data.custom_id !== 'sheet2') {
+				button.setStyle(ButtonStyle.Primary).setDisabled(false);
+			} else {
+				button.setStyle(ButtonStyle.Secondary).setDisabled(true);
+			}
+		});
+
+	if (embeds.length <= 3) {
+		console.log(embeds.length);
+
+		if (embeds.length === 1) {
+			rows[2].components.shift();
+			rows[2].components.pop();
+		} else if (embeds.length === 2) {
+			if (sheetNumber === 0) {
+				rows[2].components.shift();
+			} else {
+				rows[2].components.pop();
+			}
+		} else {
+			if (sheetNumber === 0) {
+				rows[2].components.shift();
+				rows[2].components.push(buttons.sheet[0]);
+			} else if (sheetNumber === 2) {
+				rows[2].components.pop();
+				rows[2].components.unshift(buttons.sheet[2]);
+			}
+		}
+
+		rows[2].components.forEach((button) =>
+			button.setStyle(ButtonStyle.Primary).setDisabled(false),
+		);
+
+		rows[2].components[sheetNumber]
+			.setStyle(ButtonStyle.Secondary)
+			.setDisabled(true);
+	}
+
 	return rows;
 }
 
@@ -164,9 +228,14 @@ function updateLabels(
 		embeds[sheetNumber][challengeNumber].length
 	}`;
 
+	console.log('Sheet Number:', sheetNumber);
+	console.log('Challenge Number:', challengeNumber);
+	console.log('Page Number:', pageNumber);
+	// console.log('Embeds:', embeds);
+
 	const challengeNames = [
 		embeds[sheetNumber][
-			challengeNumber <= 0
+			challengeNumber === 0
 				? embeds[sheetNumber].length - 1
 				: challengeNumber - 1
 		][0].fields[0].name,
@@ -199,7 +268,7 @@ function updateLabels(
 	}
 
 	const sheetNames = [
-		embeds[sheetNumber <= 0 ? embeds.length - 1 : sheetNumber - 1][0][0]
+		embeds[sheetNumber === 0 ? embeds.length - 1 : sheetNumber - 1][0][0]
 			.description,
 		embeds[sheetNumber][0][0].description,
 		embeds[sheetNumber >= embeds.length - 1 ? 0 : sheetNumber + 1][0][0]

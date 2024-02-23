@@ -1,10 +1,4 @@
-const {
-	SlashCommandBuilder,
-	ButtonBuilder,
-	ButtonStyle,
-	ActionRowBuilder,
-	ComponentType,
-} = require('discord.js');
+const { SlashCommandBuilder, ComponentType } = require('discord.js');
 const processSheets = require('../utils/processSheets');
 const {
 	createButtons,
@@ -22,10 +16,39 @@ module.exports = {
 				.setName('username')
 				.setDescription('The name of the user on the google sheets')
 				.setRequired(true),
+		)
+		.addStringOption((start) =>
+			start
+				.setName('start')
+				.setDescription('The position to start at')
+				.setAutocomplete(true),
+		)
+		.addStringOption((clears) =>
+			clears
+				.setName('clears')
+				.setDescription('The clear filter to start with')
+				.setChoices(
+					{ name: 'All', value: 'all' },
+					{ name: 'Cleared', value: 'cleared' },
+					{ name: 'Uncleared', value: 'uncleared' },
+				),
 		),
 
 	run: async ({ interaction }) => {
 		await interaction.deferReply();
+
+		const startPos = [];
+		const start = interaction.options?.getString('start');
+		const clearOption = interaction.options?.getString('clears') || 'all';
+
+		if (start) {
+			start.split(', ').forEach((index) => {
+				startPos.push(parseInt(index));
+			});
+		} else {
+			startPos.push(0);
+			startPos.push(0);
+		}
 
 		try {
 			const username = interaction.options.getString('username');
@@ -37,18 +60,26 @@ module.exports = {
 					`Could not find ${username}. Make sure you have spelt the name correctly, if you are on the google sheets but still failing to appear please contact \`hyrulemaki\``,
 				);
 			} else {
-				const embeds = []; // Array to store the current sheet embeds
+				// const embeds = []; // Array to store the current sheet embeds
+				const embeds = { all: [], cleared: [], uncleared: [] };
 
 				for (const sheet of userData.sheets) {
 					const sheetEmbeds = [];
+					const sheetClearedEmbeds = [];
+					const sheetUnclearedEmbeds = [];
 
 					const title = `${userData.username} has cleared ${userData.totalClears} out of ${userData.totalMods} total mods`;
 					const description = `**${sheet.name}**: ${sheet.totalClears}/${sheet.totalMods} clears`;
 
 					for (const challenge of sheet.challenges) {
 						let challengeEmbeds = [];
+						let clearedEmbeds = [];
+						let unclearedEmbeds = [];
+
 						let challengeField = {};
 						let currentFields = [];
+						let currentClearFields = [];
+						let currentUnclearFields = [];
 
 						const challengeInfoName = `${challenge.name}: ${challenge.totalClears}/${challenge.clearsForPlusRank} clears`;
 						const challengeInfoValue = `${
@@ -69,13 +100,26 @@ module.exports = {
 
 						// Push modStats to the fields, up to a limit
 						const maxModsToShow = 15;
+
+						let clear = false;
+						let unclear = false;
 						for (const mod of challenge.modStats) {
-							currentFields.push({
+							const field = {
 								name: `${mod.name}: ${
 									mod.cleared ? 'Cleared!' : 'Uncompleted'
 								}`,
 								value: '\n',
-							});
+							};
+
+							currentFields.push(field);
+
+							if (mod.cleared) {
+								clear = true;
+								currentClearFields.push(field);
+							} else {
+								unclear = true;
+								currentUnclearFields.push(field);
+							}
 
 							// If there are more mods, create a new element in the fields array
 							if (currentFields.length >= maxModsToShow) {
@@ -88,6 +132,28 @@ module.exports = {
 								// Reset fields for the next set of mods
 								currentFields = [];
 							}
+
+							if (currentClearFields.length >= maxModsToShow) {
+								clearedEmbeds.push({
+									title,
+									description,
+									fields: [challengeField, ...currentClearFields],
+								});
+
+								// Reset fields for the next set of mods
+								currentClearFields = [];
+							}
+
+							if (currentUnclearFields.length >= maxModsToShow) {
+								unclearedEmbeds.push({
+									title,
+									description,
+									fields: [challengeField, ...currentUnclearFields],
+								});
+
+								// Reset fields for the next set of mods
+								currentUnclearFields = [];
+							}
 						}
 
 						// If there are remaining mods, create an additional element in the fields array
@@ -99,16 +165,94 @@ module.exports = {
 							});
 						}
 
+						if (currentClearFields.length > 0) {
+							clearedEmbeds.push({
+								title,
+								description,
+								fields: [challengeField, ...currentClearFields],
+							});
+						}
+
+						if (currentUnclearFields.length > 0) {
+							unclearedEmbeds.push({
+								title,
+								description,
+								fields: [challengeField, ...currentUnclearFields],
+							});
+						}
+
 						sheetEmbeds.push(challengeEmbeds);
+
+						if (clear === true) {
+							sheetClearedEmbeds.push(clearedEmbeds);
+						}
+						if (unclear === true) {
+							sheetUnclearedEmbeds.push(unclearedEmbeds);
+						}
 					}
 
-					embeds.push(sheetEmbeds);
+					console.log(
+						sheetEmbeds.length,
+						sheetClearedEmbeds.length,
+						sheetUnclearedEmbeds.length,
+					);
+
+					embeds.all.push(sheetEmbeds);
+					if (sheetClearedEmbeds?.length > 0) {
+						embeds.cleared.push(sheetClearedEmbeds);
+					}
+					if (sheetUnclearedEmbeds?.length > 0) {
+						embeds.uncleared.push(sheetUnclearedEmbeds);
+					}
 				}
 
+				console.log(
+					'Embed lengths:',
+					embeds.all.length,
+					embeds.cleared.length,
+					embeds.uncleared.length,
+				);
+
+				console.log(
+					'Embed first index lengths:',
+					embeds.all[0].length,
+					embeds.cleared[0].length,
+					embeds.uncleared[0].length,
+				);
+
+				console.log(
+					'Embed second index lengths:',
+					embeds.all[0]?.[0]?.length,
+					embeds.cleared[0]?.[0]?.length,
+					embeds.uncleared[0]?.[0]?.length,
+				);
+
+				if (embeds.cleared.length === 0) {
+					embeds.cleared.push({ title: 'No cleared mods' });
+				}
+				if (embeds.uncleared.length === 0) {
+					embeds.uncleared.push({
+						title: 'No uncleared mods',
+						description: 'Congrats, you have cleared all mods! Now what?',
+					});
+				}
+
+				// let currentEmbed = embeds[clearOption];
+				let currentEmbed;
+				if (clearOption === 'cleared') {
+					currentEmbed = embeds.cleared;
+				} else if (clearOption === 'uncleared') {
+					currentEmbed = embeds.uncleared;
+				} else {
+					currentEmbed = embeds.all;
+				}
+
+				let sheetNumber = startPos[0] > currentEmbed.length ? 0 : startPos[0];
+				let challengeNumber =
+					startPos[1] > currentEmbed[sheetNumber].length ? 0 : startPos[1];
 				let pageNumber = 0;
-				let challengeNumber = 0;
-				let sheetNumber = 0;
-				let page = embeds[sheetNumber][challengeNumber][pageNumber];
+
+				let page = currentEmbed[sheetNumber][challengeNumber][pageNumber];
 
 				// Create buttons to navigate through sheets and pages
 				const buttons = createButtons(
@@ -124,7 +268,7 @@ module.exports = {
 				updateRows(
 					rows,
 					buttons,
-					embeds,
+					currentEmbed,
 					pageNumber,
 					challengeNumber,
 					sheetNumber,
@@ -132,7 +276,13 @@ module.exports = {
 				);
 
 				// Set labels
-				updateLabels(buttons, embeds, pageNumber, challengeNumber, sheetNumber);
+				updateLabels(
+					buttons,
+					currentEmbed,
+					pageNumber,
+					challengeNumber,
+					sheetNumber,
+				);
 
 				const reply = await interaction.editReply({
 					embeds: [page],
@@ -155,14 +305,17 @@ module.exports = {
 							pageNumber--;
 
 							if (pageNumber === -1) {
-								pageNumber = embeds[sheetNumber][challengeNumber].length - 1;
+								pageNumber =
+									currentEmbed[sheetNumber][challengeNumber].length - 1;
 							}
 
 							break;
 						case 'forwardPage':
 							pageNumber++;
 
-							if (pageNumber === embeds[sheetNumber][challengeNumber].length) {
+							if (
+								pageNumber === currentEmbed[sheetNumber][challengeNumber].length
+							) {
 								pageNumber = 0;
 							}
 
@@ -171,7 +324,7 @@ module.exports = {
 							challengeNumber--;
 
 							if (challengeNumber === -1) {
-								challengeNumber = embeds[sheetNumber].length - 1;
+								challengeNumber = currentEmbed[sheetNumber].length - 1;
 							}
 
 							pageNumber = 0;
@@ -179,38 +332,40 @@ module.exports = {
 						case 'challenge3':
 							challengeNumber++;
 
-							if (challengeNumber === embeds[sheetNumber].length) {
+							if (challengeNumber === currentEmbed[sheetNumber].length) {
 								challengeNumber = 0;
 							}
 
 							pageNumber = 0;
 							break;
-						case 'backSheet':
+						case 'sheet1':
 							sheetNumber--;
 
 							if (sheetNumber === -1) {
-								sheetNumber = embeds.length - 1;
+								sheetNumber = currentEmbed.length - 1;
 							}
 
 							if (
-								challengeNumber >= embeds[sheetNumber].length ||
-								embeds[oldSheetNumber].length !== embeds[sheetNumber].length
+								challengeNumber >= currentEmbed[sheetNumber].length ||
+								currentEmbed[oldSheetNumber].length !==
+									currentEmbed[sheetNumber].length
 							) {
 								challengeNumber = 0;
 							}
 
 							pageNumber = 0;
 							break;
-						case 'forwardSheet':
+						case 'sheet3':
 							sheetNumber++;
 
-							if (sheetNumber === embeds.length) {
+							if (sheetNumber === currentEmbed.length) {
 								sheetNumber = 0;
 							}
 
 							if (
-								challengeNumber >= embeds[sheetNumber].length ||
-								embeds[oldSheetNumber].length !== embeds[sheetNumber].length
+								challengeNumber >= currentEmbed[sheetNumber].length ||
+								currentEmbed[oldSheetNumber].length !==
+									currentEmbed[sheetNumber].length
 							) {
 								challengeNumber = 0;
 							}
@@ -222,7 +377,7 @@ module.exports = {
 					// Update labels and rows
 					updateLabels(
 						buttons,
-						embeds,
+						currentEmbed,
 						pageNumber,
 						challengeNumber,
 						sheetNumber,
@@ -231,7 +386,7 @@ module.exports = {
 					updateRows(
 						rows,
 						buttons,
-						embeds,
+						currentEmbed,
 						pageNumber,
 						challengeNumber,
 						sheetNumber,
@@ -239,7 +394,7 @@ module.exports = {
 					);
 
 					// Update embed
-					page = embeds[sheetNumber][challengeNumber][pageNumber];
+					page = currentEmbed[sheetNumber][challengeNumber][pageNumber];
 					interaction.update({
 						embeds: [page],
 						components: allRows,
@@ -254,7 +409,7 @@ module.exports = {
 					});
 
 					interaction.editReply({
-						embeds: [embeds[sheetNumber][challengeNumber][pageNumber]],
+						embeds: [page],
 						components: allRows,
 					});
 				});
