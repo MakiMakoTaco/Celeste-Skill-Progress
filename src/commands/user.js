@@ -242,7 +242,6 @@ module.exports = {
 					pageNumber,
 					challengeNumber,
 					sheetNumber,
-					null,
 				);
 
 				// Set labels
@@ -267,7 +266,7 @@ module.exports = {
 					idle: 60_000,
 				});
 
-				collector.on('collect', (interaction) => {
+				collector.on('collect', async (interaction) => {
 					const oldSheetNumber = sheetNumber || 0;
 
 					switch (interaction.customId) {
@@ -344,12 +343,21 @@ module.exports = {
 							break;
 						case 'all':
 							clearOption = 'all';
+							pageNumber = 0;
+							challengeNumber = 0;
+							sheetNumber = 0;
 							break;
 						case 'cleared':
 							clearOption = 'cleared';
+							pageNumber = 0;
+							challengeNumber = 0;
+							sheetNumber = 0;
 							break;
 						case 'uncleared':
 							clearOption = 'uncleared';
+							pageNumber = 0;
+							challengeNumber = 0;
+							sheetNumber = 0;
 							break;
 					}
 
@@ -372,7 +380,6 @@ module.exports = {
 						pageNumber,
 						challengeNumber,
 						sheetNumber,
-						oldSheetNumber,
 					);
 
 					// Update embed

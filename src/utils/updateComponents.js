@@ -54,7 +54,7 @@ function createButtons() {
 
 	const allStats = new ButtonBuilder()
 		.setCustomId('all')
-		.setLabel('EVERYTHING')
+		.setLabel('ALL')
 		.setStyle(ButtonStyle.Primary);
 
 	const clears = new ButtonBuilder()
@@ -111,7 +111,6 @@ function updateRows(
 	pageNumber,
 	challengeNumber,
 	sheetNumber,
-	oldSheetNumber,
 ) {
 	// Adjust page row depending on the number of pages
 	if (embeds[sheetNumber][challengeNumber].length > 2) {
@@ -129,21 +128,19 @@ function updateRows(
 	}
 
 	// Adjust challenge row depending on the number of challenges
-	if (embeds[sheetNumber].length !== 3 || oldSheetNumber !== sheetNumber) {
-		rows[1]
-			.setComponents(
-				buttons.challenge[0],
-				buttons.challenge[1],
-				buttons.challenge[2],
-			)
-			.components.forEach((button) => {
-				if (button.data.custom_id !== 'challenge2') {
-					button.setStyle(ButtonStyle.Primary).setDisabled(false);
-				} else {
-					button.setStyle(ButtonStyle.Secondary).setDisabled(true);
-				}
-			});
-	}
+	rows[1]
+		.setComponents(
+			buttons.challenge[0],
+			buttons.challenge[1],
+			buttons.challenge[2],
+		)
+		.components.forEach((button) => {
+			if (button.data.custom_id !== 'challenge2') {
+				button.setStyle(ButtonStyle.Primary).setDisabled(false);
+			} else {
+				button.setStyle(ButtonStyle.Secondary).setDisabled(true);
+			}
+		});
 
 	if (embeds[sheetNumber].length <= 3) {
 		if (embeds[sheetNumber].length === 1) {
@@ -157,11 +154,11 @@ function updateRows(
 			}
 		} else {
 			if (challengeNumber === 0) {
-				rows[1].components.shift();
-				rows[1].components.push(buttons.challenge[0]);
+				const movedButton = rows[1].components.shift();
+				rows[1].components.push(movedButton);
 			} else if (challengeNumber === 2) {
-				rows[1].components.pop();
-				rows[1].components.unshift(buttons.challenge[2]);
+				const movedButton = rows[1].components.pop();
+				rows[1].components.unshift(movedButton);
 			}
 		}
 
@@ -174,6 +171,7 @@ function updateRows(
 			.setDisabled(true);
 	}
 
+	// Adjust sheet row depending on the number of sheets
 	rows[2]
 		.setComponents(buttons.sheet[0], buttons.sheet[1], buttons.sheet[2])
 		.components.forEach((button) => {
@@ -198,11 +196,11 @@ function updateRows(
 			}
 		} else {
 			if (sheetNumber === 0) {
-				rows[2].components.shift();
-				rows[2].components.push(buttons.sheet[0]);
+				const movedButton = rows[1].components.shift();
+				rows[1].components.push(movedButton);
 			} else if (sheetNumber === 2) {
-				rows[2].components.pop();
-				rows[2].components.unshift(buttons.sheet[2]);
+				const movedButton = rows[1].components.pop();
+				rows[1].components.unshift(movedButton);
 			}
 		}
 

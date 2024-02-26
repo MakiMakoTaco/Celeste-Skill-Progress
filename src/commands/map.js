@@ -40,7 +40,7 @@ module.exports = {
 	run: async ({ interaction }) => {
 		async function getSheets() {
 			try {
-				const sheet = await spreadsheet.findMaps();
+				const sheet = await processSheets.findMaps();
 				return sheet;
 			} catch (error) {
 				console.error(error);
