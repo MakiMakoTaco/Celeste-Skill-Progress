@@ -3,9 +3,23 @@ const path = require('path');
 const { Client, IntentsBitField } = require('discord.js');
 const { CommandKit } = require('commandkit');
 const mongoose = require('mongoose');
+const fs = require('fs');
 
 const client = new Client({
 	intents: IntentsBitField.Flags.MessageContent,
+});
+
+// Log unhandled exceptions
+process.on('uncaughtException', (error) => {
+	logErrorToFile(error);
+	console.error('Unhandled Exception:', error);
+	process.exit(1);
+});
+
+// Log unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+	logErrorToFile(reason);
 });
 
 (async () => {
@@ -15,19 +29,31 @@ const client = new Client({
 		console.log('Connected to DB.');
 
 		new CommandKit({
-			client, // Discord.js client object | Required by default
-			commandsPath: path.join(__dirname, 'commands'), // The commands directory
-			eventsPath: path.join(__dirname, 'events'), // The events directory
-			// validationsPath: path.join(__dirname, 'validations'), // Only works if commandsPath is provided
-			devGuildIds: ['773124995684761630'], // To register commands to dev guilds
+			client,
+			commandsPath: path.join(__dirname, 'commands'),
+			eventsPath: path.join(__dirname, 'events'),
+			devGuildIds: ['773124995684761630'],
 			devUserIds: ['442795347849379879'],
-			// devRoleIds: ['DEV_ROLE_ID_1', 'DEV_ROLE_ID_2'],
-			// skipBuiltInValidations: true,
 			bulkRegister: true,
 		});
 
 		client.login(process.env.TOKEN);
 	} catch (error) {
-		console.log(`Error: ${error}`);
+		logErrorToFile(error);
+		console.error('An error occurred:', error);
+		process.exit(1);
 	}
 })();
+
+function logErrorToFile(error) {
+	const currentTime = new Date().toISOString();
+	const errorMessage = `${currentTime}: ${error.stack}\n`;
+
+	fs.appendFile('error.log', errorMessage, (err) => {
+		if (err) {
+			console.error('Error writing to log file:', err);
+		} else {
+			console.log('Error logged to error.log file.');
+		}
+	});
+}
