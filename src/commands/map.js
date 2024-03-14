@@ -164,14 +164,25 @@ module.exports = {
 			const sheetResults = sheetResultsArray[0] || [];
 
 			if (sheetResults.length > 0) {
+				let totalMaps = 0;
+
+				for (let i = 0; i < sheetResults.length - 1; i++) {
+					totalMaps += sheetResults[i].length;
+				}
+
+				let randomMap;
 				const mapFields = [];
 				// Randomly select a map from the results
-				let randomIndex = Math.floor(Math.random() * sheetResults.length);
+				let randomIndex = Math.floor(Math.random() * totalMaps);
 
-				const randomSheet = sheetResults[randomIndex];
-
-				randomIndex = Math.floor(Math.random() * randomSheet.length);
-				const randomMap = randomSheet[randomIndex];
+				for (let i = 0; i < sheetResults.length - 1; i++) {
+					if (randomIndex > sheetResults[i].length) {
+						randomIndex -= sheetResults[i].length;
+					} else {
+						randomMap = sheetResults[i][randomIndex];
+						break;
+					}
+				}
 
 				mapFields.push({
 					name: `This map is found in ${randomMap.sheetName} under the ${randomMap.category} challenge (row ${randomMap.rowNumber}):`,

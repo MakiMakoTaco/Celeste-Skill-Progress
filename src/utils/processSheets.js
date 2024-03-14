@@ -254,9 +254,11 @@ async function getUserData(username) {
 				challenges,
 			});
 
-			// Update totalMods and totalClears
-			totalMods += sheetMapCount;
-			totalClears += totalSheetClears;
+			if (sheetName !== 'Archived') {
+				// Update totalMods and totalClears
+				totalMods += sheetMapCount;
+				totalClears += totalSheetClears;
+			}
 		}),
 	);
 
