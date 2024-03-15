@@ -60,8 +60,6 @@ async function logErrorToFile(error) {
 	fs.appendFile('error.log', errorMessage, (err) => {
 		if (err) {
 			console.error('Error writing to log file:', err);
-		} else {
-			console.log('Error logged to error.log file.');
 		}
 	});
 }

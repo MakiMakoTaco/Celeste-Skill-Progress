@@ -28,7 +28,19 @@ module.exports = {
 		)
 		.addSubcommand(
 			(random) =>
-				random.setName('random').setDescription('Randomly picks a map'),
+				random
+					.setName('random')
+					.setDescription('Randomly picks a map')
+					.addStringOption((archived) =>
+						archived
+							.setName('archived')
+							.setDescription('Wether or not to include archived maps')
+							.addChoices(
+								{ name: 'Include', value: 'true' },
+								{ name: 'Exclude', value: 'false' },
+							)
+							.setRequired(false),
+					),
 			// .addStringOption((filters) =>
 			// 	filters
 			// 		.setName('filters')
@@ -157,6 +169,7 @@ module.exports = {
 				);
 			}
 		} else if (subcommand === 'random') {
+			const archived = interaction.options?.getString('archived') || 'false';
 			// const filter = filter
 
 			const sheetResultsArray = await getSheets();
@@ -164,9 +177,11 @@ module.exports = {
 			const sheetResults = sheetResultsArray[0] || [];
 
 			if (sheetResults.length > 0) {
+				const filteredSheetsLength =
+					archived === 'true' ? sheetResults.length : sheetResults.length - 1;
 				let totalMaps = 0;
 
-				for (let i = 0; i < sheetResults.length - 1; i++) {
+				for (let i = 0; i < filteredSheetsLength; i++) {
 					totalMaps += sheetResults[i].length;
 				}
 
@@ -175,7 +190,15 @@ module.exports = {
 				// Randomly select a map from the results
 				let randomIndex = Math.floor(Math.random() * totalMaps);
 
-				for (let i = 0; i < sheetResults.length - 1; i++) {
+				console.log(
+					archived,
+					filteredSheetsLength,
+					sheetResults.length,
+					totalMaps,
+					randomIndex,
+				);
+
+				for (let i = 0; i < filteredSheetsLength; i++) {
 					if (randomIndex > sheetResults[i].length) {
 						randomIndex -= sheetResults[i].length;
 					} else {
