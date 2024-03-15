@@ -190,14 +190,6 @@ module.exports = {
 				// Randomly select a map from the results
 				let randomIndex = Math.floor(Math.random() * totalMaps);
 
-				console.log(
-					archived,
-					filteredSheetsLength,
-					sheetResults.length,
-					totalMaps,
-					randomIndex,
-				);
-
 				for (let i = 0; i < filteredSheetsLength; i++) {
 					if (randomIndex > sheetResults[i].length) {
 						randomIndex -= sheetResults[i].length;

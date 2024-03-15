@@ -183,8 +183,6 @@ function updateRows(
 		});
 
 	if (embeds.length <= 3) {
-		console.log(embeds.length);
-
 		if (embeds.length === 1) {
 			rows[2].components.shift();
 			rows[2].components.pop();
