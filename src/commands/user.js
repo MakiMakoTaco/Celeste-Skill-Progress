@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, ComponentType } = require('discord.js');
+const UserAlias = require('../schemas/UserAlias');
 const processSheets = require('../utils/processSheets');
 const {
 	createButtons,
@@ -14,13 +15,14 @@ module.exports = {
 		.addStringOption((name) =>
 			name
 				.setName('username')
-				.setDescription('The name of the user on the google sheets')
-				.setRequired(true),
+				.setDescription('The name of the user on the google sheets'),
 		)
 		.addStringOption((start) =>
 			start
 				.setName('start')
-				.setDescription('The position to start at')
+				.setDescription(
+					'The position to start at (currently only if clears is empty)',
+				)
 				.setAutocomplete(true),
 		)
 		.addStringOption((clears) =>
@@ -35,8 +37,6 @@ module.exports = {
 		),
 
 	run: async ({ interaction }) => {
-		await interaction.deferReply();
-
 		const startPos = [];
 		const start = interaction.options?.getString('start');
 		let clearOption = interaction.options?.getString('clears') || 'all';
@@ -51,7 +51,27 @@ module.exports = {
 		}
 
 		try {
-			const username = interaction.options.getString('username');
+			let username = interaction.options?.getString('username');
+
+			if (!username) {
+				const userAlias = await UserAlias.findOne({
+					discordId: interaction.user.id,
+				});
+
+				if (userAlias) {
+					username = userAlias.sheetName;
+				} else {
+					interaction.reply({
+						content:
+							'You currently do not have a CSR username connected to this Discord account. Please either enter a username when running this command or connect one by running `/username`.',
+						ephemeral: true,
+					});
+
+					return;
+				}
+			}
+
+			await interaction.deferReply();
 
 			const userData = await processSheets.getUserData(username);
 
@@ -216,9 +236,15 @@ module.exports = {
 
 				let currentEmbed = embeds[clearOption];
 
-				let sheetNumber = startPos[0] > currentEmbed.length ? 0 : startPos[0];
+				let sheetNumber =
+					startPos[0] > currentEmbed.length || clearOption !== 'all'
+						? 0
+						: startPos[0];
 				let challengeNumber =
-					startPos[1] > currentEmbed[sheetNumber].length ? 0 : startPos[1];
+					startPos[1] > currentEmbed[sheetNumber].length ||
+					clearOption !== 'all'
+						? 0
+						: startPos[1];
 				let pageNumber = 0;
 
 				let page = currentEmbed[sheetNumber][challengeNumber][pageNumber];

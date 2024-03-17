@@ -281,4 +281,45 @@ async function getUserData(username) {
 	return null;
 }
 
-module.exports = { findMaps, getUserData };
+async function checkUserExists(username) {
+	const file = await getFile();
+
+	if (!file.data.sheets || file.data.sheets.length === 0) {
+		return null;
+	}
+
+	let userExists = false;
+
+	await Promise.all(
+		file.data.sheets.map(async (sheet) => {
+			const sheetName = sheet.properties.title;
+
+			const columnCount = sheet.properties.gridProperties.columnCount;
+			const columnLetter = numLetConverter.numberToColumn(columnCount + 1);
+
+			const secondRow = await sheetsAPI.spreadsheets.values.batchGet({
+				spreadsheetId,
+				ranges: `${sheetName}!B2:${columnLetter}2`,
+			});
+
+			const secondRowValues = secondRow.data.valueRanges[0].values[0];
+
+			const userColumnIndex = secondRowValues.findIndex(
+				(value) => value.toLowerCase() === username.toLowerCase(),
+			);
+
+			if (userColumnIndex !== -1) {
+				userExists = true;
+				return; // Exit the loop
+			}
+		}),
+	);
+
+	if (userExists) {
+		return true;
+	}
+
+	return null;
+}
+
+module.exports = { findMaps, getUserData, checkUserExists };
