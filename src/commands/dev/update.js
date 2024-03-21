@@ -31,7 +31,7 @@ module.exports = {
 		});
 	},
 
-	// options: {
-	// 	devOnly: true,
-	// },
+	options: {
+		devOnly: true,
+	},
 };
