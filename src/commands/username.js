@@ -54,7 +54,6 @@ module.exports = {
 			await interaction.deferReply();
 
 			const userExists = await checkUserExists(username);
-			console.log(userExists);
 
 			if (!userExists) {
 				const confirm = new ButtonBuilder()
