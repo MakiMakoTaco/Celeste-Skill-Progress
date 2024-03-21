@@ -6,7 +6,10 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 
 const client = new Client({
-	intents: IntentsBitField.Flags.MessageContent,
+	intents: [
+		IntentsBitField.Flags.MessageContent,
+		IntentsBitField.Flags.GuildMessages,
+	],
 });
 
 // Log unhandled exceptions
