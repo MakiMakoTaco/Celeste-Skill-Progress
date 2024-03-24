@@ -7,26 +7,21 @@ module.exports = async (error, client, handler) => {
 	await handler.reloadCommands();
 };
 
-// Function to log error to a file
-function logErrorToFile(error) {
+async function logErrorToFile(error) {
+	try {
+		const zelda = await client.users.fetch('442795347849379879');
+
+		await zelda.send(`An error occurred: ${error.message}`);
+	} catch (error) {
+		console.error('Error alerting:', error);
+	}
+
 	const currentTime = new Date().toISOString();
 	const errorMessage = `${currentTime}: ${error.stack}\n`;
 
-	// Append error message to a file named 'error.log'
 	fs.appendFile('error.log', errorMessage, (err) => {
-		if (err) console.error('Error writing to log file:', err);
+		if (err) {
+			console.error('Error writing to log file:', err);
+		}
 	});
 }
-
-// // Function to restart the bot
-// function restartBot() {
-//   // Destroy the current client instance
-//   client.destroy();
-
-//   // Create a new client instance
-//   const newClient = new Discord.Client();
-
-//   // Re-run your bot initialization code here
-//   // For example, you can login again
-//   newClient.login('your-bot-token');
-// }

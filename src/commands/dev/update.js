@@ -7,8 +7,6 @@ module.exports = {
 		.setDescription('Updates and restarts the bot'),
 
 	run: async ({ interaction, client, handler }) => {
-		console.log('UID:', interaction.user.id);
-
 		if (interaction.user.id !== '442795347849379879')
 			return interaction.reply('Only the bot owner can run this command');
 		await interaction.reply('Updating and restarting...');
@@ -31,7 +29,7 @@ module.exports = {
 		});
 	},
 
-	options: {
-		devOnly: true,
-	},
+	// options: {
+	// 	devOnly: true,
+	// },
 };
