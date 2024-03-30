@@ -30,6 +30,8 @@ module.exports = {
 
 			// Restart the bot
 			await handler.reloadCommands();
+
+			await interaction.editReply('Bot restarted successfully!');
 		});
 	},
 
