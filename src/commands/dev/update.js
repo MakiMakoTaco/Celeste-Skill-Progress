@@ -24,6 +24,12 @@ module.exports = {
 			}
 
 			console.log(`stdout: ${stdout}`);
+
+			if (stdout.includes('Already up to date.')) {
+				await interaction.editReply('Bot is already up to date');
+				return;
+			}
+
 			await interaction.editReply(
 				`Pull successful! \n\`${stdout}\`\nRestarting...`,
 			);
