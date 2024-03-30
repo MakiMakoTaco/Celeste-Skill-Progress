@@ -30,7 +30,7 @@ async function getFile() {
 		const sheets = fileInfo.data.sheets;
 		const sheetTitles = sheets.map((sheet) => sheet.properties.title);
 
-		return [fileInfo, sheetTitles];
+		return [fileInfo.data, sheetTitles];
 	} catch (error) {
 		console.error('Error fetching file:', error.message);
 		throw error;
@@ -49,7 +49,7 @@ async function getSheetValues(sheetNames = []) {
 			ranges: sheetNames,
 			majorDimension: 'COLUMNS',
 		});
-		return result;
+		return result.data.valueRanges;
 	} catch (error) {
 		console.error('Error fetching sheet names:', error.message);
 		throw error;

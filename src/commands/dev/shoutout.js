@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const User = require('../../../in_progress/schemas/UserStats');
+const { numberToColumn } = require('../../utils/numberLetterConversion');
 const {
 	getFile,
 	getSheetValues,
@@ -27,10 +28,33 @@ module.exports = {
 
 		try {
 			const file = await getFile();
+
 			const sheet = await getSheetValues(file[1]);
 
-			const maps = await findMaps(file[0], sheet);
-			console.log('maps', maps[0]);
+			// Getting the latest data
+			/**
+			 * Run findMaps(change to fetchMaps or something) and change the usersData to take the maps aswell
+			 *
+			 * Use the maps to get a defualt object for the user
+			 * then duplicate the defualt object and change the nessesary values
+			 */
+
+			// Comparing changes
+			/**
+			 * Check the database for the user
+			 *
+			 * if no user is found then create a defualt and continue
+			 *
+			 * if found compare the data (if the rank roles have changed to true, should be all I need. Maybe the total clears aswell for that role)
+			 * either store changes to do all at once or do as soon as the change has been found
+			 *
+			 * try adding nessecary role(s) to the user and then send message in the shoutouts channel **without pinging**
+			 */
+
+			// Save updated userData to database
+
+			// const maps = await findMaps(file[0], sheet);
+			// console.log('maps', maps[0]);
 
 			// const users = await getUsersData(file[0], sheet);
 			// console.log(users[0]);
