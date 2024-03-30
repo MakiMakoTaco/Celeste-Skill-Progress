@@ -24,14 +24,18 @@ module.exports = {
 			}
 
 			console.log(`stdout: ${stdout}`);
-			console.error(`stderr: ${stderr}`);
+			await interaction.editReply(`Pull successful! ${stdout}\nRestarting...`);
 
-			await interaction.editReply('Update successful! Restarting...');
+			console.error(`stderr: ${stderr}`);
 
 			// Restart the bot
 			await handler.reloadCommands();
 
-			await interaction.editReply('Bot restarted successfully!');
+			try {
+				await interaction.followUp('Bot restarted successfully!');
+			} catch (error) {
+				await interaction.followUp(`Error restarting bot: ${error.message}`);
+			}
 		});
 	},
 
