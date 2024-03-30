@@ -8,14 +8,18 @@ module.exports = {
 
 	run: async ({ interaction, client, handler }) => {
 		if (interaction.user.id !== '442795347849379879')
-			return interaction.reply('Only the bot owner can run this command');
-		await interaction.reply('Updating and restarting...');
+			return interaction.reply({
+				content: 'Only the bot owner can run this command',
+				ephemeral: true,
+			});
+
+		await interaction.reply('Pulling from git...');
 
 		// Execute git pull
 		exec('git pull', async (error, stdout, stderr) => {
 			if (error) {
 				console.error(`Error executing git pull: ${error.message}`);
-				await interaction.editReply(`Error updating: ${error.message}`);
+				await interaction.editReply(`Error pulling: ${error.message}`);
 				return;
 			}
 
@@ -25,7 +29,7 @@ module.exports = {
 			await interaction.editReply('Update successful! Restarting...');
 
 			// Restart the bot
-			handler.reloadCommands();
+			await handler.reloadCommands();
 		});
 	},
 

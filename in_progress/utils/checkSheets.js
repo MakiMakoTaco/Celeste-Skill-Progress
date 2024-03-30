@@ -154,14 +154,20 @@ async function findMaps(file, sheetValues) {
  * @returns {Promise<Object[]>} A promise that resolves to an array containing the users' data.
  */
 async function getUsersData(file, sheetValues) {
+	console.log('File:', file);
+	console.log('Sheet values:', sheetValues);
+
 	const sheetOrder = [];
 
 	if (!file.data.sheets || file.data.sheets.length === 0) {
 		return null;
 	}
 
+	let defualtData = {};
+
 	let totalMods = 0;
 	let totalClears = 0;
+
 	let usersData = [];
 
 	await Promise.all(

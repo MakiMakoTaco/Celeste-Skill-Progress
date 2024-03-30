@@ -1,11 +1,11 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const User = require('../schemas/UserStats');
+const User = require('../../../in_progress/schemas/UserStats');
 const {
 	getFile,
 	getSheetValues,
 	findMaps,
 	getUsersData,
-} = require('../utils/checkSheets');
+} = require('../../../in_progress/utils/checkSheets');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -16,17 +16,25 @@ module.exports = {
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
 	run: async ({ interaction }) => {
+		if (interaction.user.id !== '442795347849379879') {
+			return interaction.reply({
+				content: 'Only the bot owner can use this command.',
+				ephemeral: true,
+			});
+		}
+
 		await interaction.deferReply();
 
 		try {
 			const file = await getFile();
 			const sheet = await getSheetValues(file[1]);
 
-			// const maps = await findMaps(file[0], sheet);
+			const maps = await findMaps(file[0], sheet);
+			console.log('maps', maps[0]);
 
-			const users = await getUsersData(file[0], sheet);
-			console.log(users[0]);
-			console.log(users[3]);
+			// const users = await getUsersData(file[0], sheet);
+			// console.log(users[0]);
+			// console.log(users[3]);
 			interaction.editReply('Data found');
 
 			// await User.deleteMany({});
