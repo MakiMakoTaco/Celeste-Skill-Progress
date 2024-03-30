@@ -25,7 +25,7 @@ module.exports = {
 
 			console.log(`stdout: ${stdout}`);
 			await interaction.editReply(
-				`Pull successful! \`${stdout}\`\nRestarting...`,
+				`Pull successful! \n\`${stdout}\`\nRestarting...`,
 			);
 
 			console.error(`stderr: ${stderr}`);
