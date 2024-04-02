@@ -199,15 +199,21 @@ module.exports = {
 					}
 				}
 
-				mapFields.push({
-					name: `This map is found in ${randomMap.sheetName} under the ${randomMap.category} challenge (row ${randomMap.rowNumber}):`,
-					value: randomMap.hyperlink || 'Unable to retrieve link\n',
-				});
+				try {
+					mapFields.push({
+						name: `This map is found in ${randomMap.sheetName} under the ${randomMap.category} challenge (row ${randomMap.rowNumber}):`,
+						value: randomMap.hyperlink || 'Unable to retrieve link\n',
+					});
 
-				const mapEmbed = new EmbedBuilder()
-					.setTitle(`The random map is: ${randomMap.mapName}`)
-					.setFields(mapFields);
-				interaction.editReply({ content: null, embeds: [mapEmbed] });
+					const mapEmbed = new EmbedBuilder()
+						.setTitle(`The random map is: ${randomMap.mapName}`)
+						.setFields(mapFields);
+					interaction.editReply({ content: null, embeds: [mapEmbed] });
+				} catch (error) {
+					console.error(error);
+					interaction.editReply(`Error fetching map or it's info.`);
+					console.log('randomMap:', randomMap);
+				}
 			} else {
 				interaction.editReply(
 					`Error finding a random map, please try again in a few minutes.`,

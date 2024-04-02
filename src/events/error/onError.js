@@ -1,13 +1,13 @@
 const fs = require('fs');
 
 module.exports = async (error, client, handler) => {
-	logErrorToFile(error);
+	logErrorToFile(error, client);
 
 	// Restart the bot
 	await handler.reloadCommands();
 };
 
-async function logErrorToFile(error) {
+async function logErrorToFile(error, client) {
 	try {
 		const zelda = await client.users.fetch('442795347849379879');
 

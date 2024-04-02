@@ -137,11 +137,11 @@ async function findMaps(file, sheetValues) {
 
 				mapInfo.push(hyperlinksAndNotes);
 			} else {
-				console.log('No data found in the specified range.');
+				console.error('No data found in the specified range.');
 			}
 		}
 	} else {
-		console.log('No sheets found in the spreadsheet.');
+		console.error('No sheets found in the spreadsheet.');
 	}
 
 	return [mapInfo, categoryTotals];
@@ -151,27 +151,191 @@ async function findMaps(file, sheetValues) {
  * Fetches the users' data from the spreadsheet.
  * @param {Object} file - The file information obtained from the spreadsheet.
  * @param {Object} sheetValues - The fetched sheet values.
- * @returns {Promise<Object[]>} A promise that resolves to an array containing the users' data.
+ * @returns {Promise<Object>} A promise that resolves to an object of default user sheet data
  */
-async function getUsersData(file, sheetValues) {
-	console.log('File:', file);
-	console.log('Sheet values:', sheetValues);
-
+async function getDefaultUserData(file, sheetValues) {
 	const sheetOrder = [];
 
-	if (!file.data.sheets || file.data.sheets.length === 0) {
+	if (!file.sheets || file.sheets.length === 0) {
 		return null;
 	}
 
-	let defualtData = {};
+	let defaultData = [];
 
 	let totalMods = 0;
-	let totalClears = 0;
+	// let totalClears = 0;
 
-	let usersData = [];
+	// let usersData = [];
 
 	await Promise.all(
-		file.data.sheets.map(async (sheet) => {
+		file.sheets.map(async (sheet) => {
+			const sheetName = sheet.properties.title;
+			sheetOrder.push(sheetName);
+
+			const sheetIndex = sheetOrder.indexOf(sheetName);
+
+			const rowCount = sheet.properties.gridProperties.rowCount;
+			// const columnCount = sheet.properties.gridProperties.columnCount;
+
+			let sheetMapCount = 0;
+			// let totalSheetClears;
+
+			const mapColumn = sheetValues[sheetIndex]?.values[0] || [];
+
+			// for (let i = 1; i < columnCount; i++) {
+			// const userColumn = numberLetterConversion.numberToColumn(i + 1);
+			// const username =
+			// 	sheetValues.data.valueRanges[sheetIndex]?.values[i]?.[1] || null;
+
+			// const userClearData =
+			// 	sheetValues.data.valueRanges[sheetIndex]?.values[i] || [];
+
+			const challenges = [];
+			const category = [];
+			// const categoryMapsBeaten = [];
+			const mapCountForRank = [];
+			const mapCountForPlusRank = [];
+
+			for (let i = 0; i < rowCount; i++) {
+				// const userClear = userClearData[k] || null;
+				const mapName = mapColumn[i];
+
+				if (!mapName) continue;
+
+				if (
+					i === 0 ||
+					i === 1 ||
+					i === 2 ||
+					(mapName.includes(' Challenges - Clear') &&
+						!mapName.includes('Total')) ||
+					mapName.includes('Total (')
+				) {
+					const nameSplit = mapName.split(' ');
+
+					if (i === 0 || i === 1) {
+						continue;
+					} else if (i === 2) {
+						sheetMapCount = parseInt(
+							nameSplit[nameSplit.length - 1].replace(')', '').trim(),
+						);
+						// totalSheetClears = parseInt(userClear) || 0;
+					} else {
+						let challengeNumber = nameSplit[nameSplit.length - 1];
+
+						if (challengeNumber.includes(')')) {
+							challengeNumber = challengeNumber.replace(')', '');
+						}
+
+						challengeNumber = parseInt(challengeNumber.trim());
+
+						if (
+							mapName &&
+							mapName.includes(' Challenges - Clear') &&
+							!mapName.includes('Total')
+						) {
+							category.push({
+								name: mapName.split(' Challenges - Clear')[0].trim(),
+								modStats: [],
+							});
+							mapCountForRank.push(challengeNumber);
+						} else {
+							mapCountForPlusRank.push(challengeNumber);
+							// categoryMapsBeaten.push(userClear || '0');
+						}
+					}
+				} else {
+					category[category.length - 1].modStats.push({
+						name: mapName,
+						cleared: null,
+						row: i + 1,
+					});
+				}
+			}
+
+			for (let i = 0; i < category.length; i++) {
+				challenges.push({
+					name: category[i].name,
+					// totalClears: parseInt(categoryMapsBeaten[i]),
+					totalClears: 0,
+					clearsForRank: mapCountForRank[i],
+					clearsForPlusRank: mapCountForPlusRank[i],
+					modStats: category[i].modStats,
+				});
+			}
+
+			// // Find existing user
+			// const existingUserIndex = usersData.findIndex(
+			// 	(user) => user.username === username,
+			// );
+
+			totalMods += sheetMapCount;
+
+			// if (defaultData.length < 0) {
+			// 	console.log('data exists');
+			// 	// Push sheet data to existing user
+			// 	defaultData[0].sheets.push({
+			// 		name: sheetName,
+			// 		// userColumn,
+			// 		userColumn: null,
+			// 		totalMods: sheetMapCount,
+			// 		// totalClears: totalSheetClears,
+			// 		totalClears: 0,
+			// 		challenges,
+			// 	});
+			// } else {
+			// Create a default user
+			defaultData.push({
+				// // username,
+				// username: null,
+				// totalMods,
+				// // totalClears: totalSheetClears,
+				// totalClears: 0,
+				// sheets: [
+				// {
+				name: sheetName,
+				// userColumn,
+				userColumn: null,
+				totalMods: sheetMapCount,
+				// totalClears: totalSheetClears,
+				totalClears: 0,
+				challenges,
+				// 		},
+				// 	],
+			});
+			// }
+			// }
+		}),
+	);
+
+	const defaultUserData = {
+		username: null,
+		totalMods,
+		// totalClears: totalSheetClears,
+		totalClears: 0,
+		sheets: defaultData.map((sheet) => sheet),
+	};
+
+	return defaultUserData;
+}
+
+/**
+ * Fetches the users' data from the spreadsheet.
+ * @param {Object} file - The file information obtained from the spreadsheet.
+ * @param {Object} sheetValues - The fetched sheet values.
+ * @param {Object} defaultData - The default user data.
+ * @returns {Promise<Object[]>} A promise that resolves to an array containing the users' data.
+ */
+async function getUsersData(file, sheetValues, defaultData) {
+	const sheetOrder = [];
+
+	if (!file.sheets || file.sheets.length === 0) {
+		return null;
+	}
+
+	const usersData = [];
+
+	await Promise.all(
+		file.sheets.map(async (sheet) => {
 			const sheetName = sheet.properties.title;
 			sheetOrder.push(sheetName);
 
@@ -180,21 +344,16 @@ async function getUsersData(file, sheetValues) {
 			const rowCount = sheet.properties.gridProperties.rowCount;
 			const columnCount = sheet.properties.gridProperties.columnCount;
 
-			let sheetMapCount;
-			let totalSheetClears;
-
-			const mapColumnData =
-				sheetValues.data.valueRanges[sheetIndex]?.values[0] || [];
+			const mapColumnData = sheetValues[sheetIndex]?.values[0] || [];
 
 			for (let i = 1; i < columnCount; i++) {
 				const userColumn = numberLetterConversion.numberToColumn(i + 1);
-				const username =
-					sheetValues.data.valueRanges[sheetIndex]?.values[i]?.[1] || null;
+				const username = sheetValues[sheetIndex]?.values[i]?.[1] || null;
 
-				const userClearData =
-					sheetValues.data.valueRanges[sheetIndex]?.values[i] || [];
+				const userClearData = sheetValues[sheetIndex]?.values[i] || [];
 
-				const challengesForUser = [];
+				let totalSheetClears = 0;
+				const challenges = [];
 				const category = [];
 				const categoryMapsBeaten = [];
 				const mapCountForRank = [];
@@ -257,7 +416,7 @@ async function getUsersData(file, sheetValues) {
 				}
 
 				for (let k = 0; k < category.length; k++) {
-					challengesForUser.push({
+					challenges.push({
 						name: category[k].name,
 						totalClears: parseInt(categoryMapsBeaten[k]),
 						clearsForRank: parseInt(mapCountForRank[k]),
@@ -267,39 +426,32 @@ async function getUsersData(file, sheetValues) {
 				}
 
 				// Find existing user
-				const existingUserIndex = usersData.findIndex(
+				let existingUserIndex = usersData.findIndex(
 					(user) => user.username === username,
 				);
 
-				if (existingUserIndex !== -1) {
-					// Push sheet data to existing user
-					usersData[existingUserIndex].totalMods += sheetMapCount;
-					usersData[existingUserIndex].totalClears += totalSheetClears;
-
-					usersData[existingUserIndex].sheets.push({
-						name: sheetName,
-						userColumn,
-						totalMods: sheetMapCount,
-						totalClears: totalSheetClears,
-						challenges: challengesForUser,
-					});
-				} else {
-					// Create a new user
+				if (existingUserIndex === -1) {
 					usersData.push({
 						username,
-						totalMods: sheetMapCount,
-						totalClears: totalSheetClears,
-						sheets: [
-							{
-								name: sheetName,
-								userColumn,
-								totalMods: sheetMapCount,
-								totalClears: totalSheetClears,
-								challenges: challengesForUser,
-							},
-						],
+						roles: [],
+						totalMods: defaultData.totalMods,
+						totalClears: 0,
+						sheets: defaultData.sheets.map((sheet) => ({ ...sheet })),
 					});
+
+					existingUserIndex = usersData.length - 1;
 				}
+
+				// Push sheet data to existing user
+				usersData[existingUserIndex].totalClears += totalSheetClears;
+
+				usersData[existingUserIndex].sheets[sheetIndex] = {
+					name: sheetName,
+					userColumn: userColumn,
+					totalMods: defaultData.sheets[sheetIndex].totalMods,
+					totalClears: totalSheetClears,
+					challenges,
+				};
 			}
 		}),
 	);
@@ -308,4 +460,10 @@ async function getUsersData(file, sheetValues) {
 }
 
 // Export the functions
-module.exports = { getFile, getSheetValues, findMaps, getUsersData };
+module.exports = {
+	getFile,
+	getSheetValues,
+	findMaps,
+	getDefaultUserData,
+	getUsersData,
+};

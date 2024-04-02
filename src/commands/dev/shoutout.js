@@ -1,10 +1,13 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const {
+	SlashCommandBuilder,
+	PermissionFlagsBits,
+	Client,
+} = require('discord.js');
 const User = require('../../../in_progress/schemas/UserStats');
-const { numberToColumn } = require('../../utils/numberLetterConversion');
 const {
 	getFile,
 	getSheetValues,
-	findMaps,
+	getDefaultUserData,
 	getUsersData,
 } = require('../../../in_progress/utils/checkSheets');
 
@@ -16,7 +19,7 @@ module.exports = {
 		)
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-	run: async ({ interaction }) => {
+	run: async ({ interaction, client }) => {
 		if (interaction.user.id !== '442795347849379879') {
 			return interaction.reply({
 				content: 'Only the bot owner can use this command.',
@@ -27,17 +30,45 @@ module.exports = {
 		await interaction.deferReply();
 
 		try {
+			// Get data from Google Sheets
 			const file = await getFile();
-
 			const sheet = await getSheetValues(file[1]);
 
-			// Getting the latest data
-			/**
-			 * Run findMaps(change to fetchMaps or something) and change the usersData to take the maps aswell
-			 *
-			 * Use the maps to get a defualt object for the user
-			 * then duplicate the defualt object and change the nessesary values
-			 */
+			// Create a default user object
+			const defaultUser = await getDefaultUserData(file[0], sheet);
+
+			const usersData = await getUsersData(file[0], sheet, defaultUser);
+			console.log(usersData[0]);
+
+			usersData.forEach((user) => {
+				user.sheets.forEach((sheet) => {
+					sheet.challenges.forEach((challenge) => {
+						if (challenge.totalClears >= challenge.clearsForRank) {
+							user.roles.push(
+								`${challenge.name}${
+									sheet.name.includes('Archived') ||
+									sheet.name.includes('Catstare')
+										? ''
+										: ` ${sheet.name}`
+								}`,
+							);
+
+							if (challenge.totalClears === challenge.clearsForPlusRank) {
+								user.roles.push(
+									`${challenge.name}+${
+										sheet.name.includes('Archived') ||
+										sheet.name.includes('Catstare')
+											? ''
+											: ` ${sheet.name}`
+									}`,
+								);
+							}
+						}
+					});
+				});
+			});
+
+			console.log(usersData[0].roles);
 
 			// Comparing changes
 			/**
@@ -51,23 +82,91 @@ module.exports = {
 			 * try adding nessecary role(s) to the user and then send message in the shoutouts channel **without pinging**
 			 */
 
-			// Save updated userData to database
+			try {
+				const existingUsersData = await User.find({});
 
-			// const maps = await findMaps(file[0], sheet);
-			// console.log('maps', maps[0]);
+				usersData.forEach(async (user) => {
+					const matchingUser =
+						existingUsersData.find((u) => u.username === user.username) ||
+						defaultUser;
 
-			// const users = await getUsersData(file[0], sheet);
-			// console.log(users[0]);
-			// console.log(users[3]);
-			interaction.editReply('Data found');
+					const newRoles = user.roles?.filter(
+						(role) => !matchingUser.roles?.includes(role),
+					);
 
-			// await User.deleteMany({});
-			// interaction.followUp('Cleared database');
+					if (newRoles?.length > 0) {
+						if (user.username === 'touhoe') {
+							try {
+								const guild = await client.guilds.fetch('927897210471989270');
+								const guildRoles = await guild.roles.fetch();
 
-			// await User.insertMany(users);
-			// interaction.followUp('Data inserted to database');
+								// const rankRoles = guildRoles.filter((role) =>
+								// 	newRoles.includes(role.name),
+								// );
+
+								// const mappedRoles = rankRoles.map((role) => role);
+
+								const sortedRoles = [];
+								if (newRoles.includes('+')) {
+									const plusRoles = newRoles.filter((role) =>
+										role.includes('+'),
+									);
+
+									plusRoles.forEach((role) => {
+										const rankRole = guildRoles.find(role);
+										const rankRole2 = guildRoles.find((r) => role.includes(r));
+
+										if (doubleRole) {
+											sortedRoles.push(rankRole2, rankRole);
+										} else {
+											sortedRoles.push(rankRole);
+										}
+									});
+								}
+
+								console.log(sortedRoles);
+
+								let editedMessage = '';
+								for (let i = 0; i < sortedRoles.length; i++) {
+									editedMessage = `**Congratulations to our newest ${
+										sortedRoles[0].length > 0
+											? `${sortedRoles[0][0]} (and ${sortedRoles[0][1]})`
+											: `${sortedRoles[0]}`
+									} rank, ${user.username}!**`;
+
+									const shoutoutChannel = await client.channels.fetch(
+										'1224754665363738645',
+									);
+
+									const message = await shoutoutChannel.send(
+										`Congratulations to `,
+									);
+
+									await message.edit(editedMessage);
+								}
+
+								await User.findOneAndUpdate(
+									{ username: user.username },
+									{ $addToSet: { roles: { $each: newRoles } } },
+									{ upsert: true },
+								);
+							} catch (error) {
+								const logChannel = await client.channels.fetch(
+									'1207190273596063774',
+								);
+
+								logChannel.send(`Error messaging in shoutouts: ${error}`);
+							}
+						}
+					}
+				});
+			} catch (error) {
+				console.error(error);
+			}
 		} catch (error) {
 			interaction.editReply(`Error: ${error.message}`);
+
+			console.error(error);
 		}
 	},
 };
