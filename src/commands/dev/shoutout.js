@@ -38,7 +38,12 @@ module.exports = {
 			const defaultUser = await getDefaultUserData(file[0], sheet);
 
 			const usersData = await getUsersData(file[0], sheet, defaultUser);
-			console.log(usersData[0]);
+
+			// interaction.editReply('Data has been fetched!');
+			// await User.deleteMany({});
+			// interaction.editReply('Data has been deleted!');
+			// await User.insertMany(usersData);
+			// return interaction.editReply('Data has been updated!');
 
 			usersData.forEach((user) => {
 				user.sheets.forEach((sheet) => {
@@ -68,8 +73,6 @@ module.exports = {
 				});
 			});
 
-			console.log(usersData[0].roles);
-
 			// Comparing changes
 			/**
 			 * Check the database for the user
@@ -83,55 +86,59 @@ module.exports = {
 			 */
 
 			try {
-				const existingUsersData = await User.find({});
-
 				usersData.forEach(async (user) => {
-					const matchingUser =
-						existingUsersData.find((u) => u.username === user.username) ||
-						defaultUser;
+					const existingUser = await User.find({ username: user.username });
+					const matchingUser = existingUser || defaultUser;
 
 					const newRoles = user.roles?.filter(
 						(role) => !matchingUser.roles?.includes(role),
 					);
 
+					if (user.username === 'touhoe') console.log(newRoles.length);
 					if (newRoles?.length > 0) {
 						if (user.username === 'touhoe') {
 							try {
 								const guild = await client.guilds.fetch('927897210471989270');
 								const guildRoles = await guild.roles.fetch();
 
-								// const rankRoles = guildRoles.filter((role) =>
-								// 	newRoles.includes(role.name),
-								// );
-
-								// const mappedRoles = rankRoles.map((role) => role);
-
+								const rolesToGive = [];
 								const sortedRoles = [];
-								if (newRoles.includes('+')) {
-									const plusRoles = newRoles.filter((role) =>
-										role.includes('+'),
-									);
 
-									plusRoles.forEach((role) => {
-										const rankRole = guildRoles.find(role);
-										const rankRole2 = guildRoles.find((r) => role.includes(r));
+								const doneRoles = [];
 
-										if (doubleRole) {
-											sortedRoles.push(rankRole2, rankRole);
-										} else {
-											sortedRoles.push(rankRole);
-										}
-									});
-								}
+								newRoles.reverse();
+								newRoles.forEach((role) => {
+									console.log(role);
+									console.log(newRoles);
 
-								console.log(sortedRoles);
+									if (doneRoles.includes(role)) return;
 
+									const rankRole = guildRoles.find((r) => r.name === role);
+									if (
+										role.includes('+') &&
+										newRoles.find((r) => r === role.replace('+', ''))
+									) {
+										const rankRole2 = guildRoles.find(
+											(r) => r.name === role.replace('+', ''),
+										);
+
+										sortedRoles.push([rankRole, rankRole2]);
+										doneRoles.push(role.replace('+', ''));
+									} else {
+										sortedRoles.push(rankRole);
+									}
+									rolesToGive.push(rankRole);
+
+									doneRoles.push(role);
+								});
+
+								sortedRoles.reverse();
 								let editedMessage = '';
 								for (let i = 0; i < sortedRoles.length; i++) {
 									editedMessage = `**Congratulations to our newest ${
-										sortedRoles[0].length > 0
-											? `${sortedRoles[0][0]} (and ${sortedRoles[0][1]})`
-											: `${sortedRoles[0]}`
+										sortedRoles[i].length > 0
+											? `${sortedRoles[i][0].name} (and ${sortedRoles[i][1].name})`
+											: `${sortedRoles[i].name}`
 									} rank, ${user.username}!**`;
 
 									const shoutoutChannel = await client.channels.fetch(
@@ -144,19 +151,18 @@ module.exports = {
 
 									await message.edit(editedMessage);
 								}
-
-								await User.findOneAndUpdate(
-									{ username: user.username },
-									{ $addToSet: { roles: { $each: newRoles } } },
-									{ upsert: true },
-								);
 							} catch (error) {
 								const logChannel = await client.channels.fetch(
 									'1207190273596063774',
 								);
 
+								console.log(error);
 								logChannel.send(`Error messaging in shoutouts: ${error}`);
 							}
+
+							await User.findOneAndUpdate({ username: user.username }, user);
+
+							interaction.editReply('DB updated');
 						}
 					}
 				});
@@ -164,7 +170,7 @@ module.exports = {
 				console.error(error);
 			}
 		} catch (error) {
-			interaction.editReply(`Error: ${error.message}`);
+			// interaction.editReply(`Error: ${error.message}`);
 
 			console.error(error);
 		}

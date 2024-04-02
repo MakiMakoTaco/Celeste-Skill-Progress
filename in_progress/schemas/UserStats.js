@@ -5,12 +5,12 @@ const challengeSchema = new Schema({
 	totalClears: Number,
 	clearsForRank: Number,
 	clearsForPlusRank: Number,
-	hasRank: Boolean,
-	hasPlusRank: Boolean,
+	// hasRank: Boolean,
+	// hasPlusRank: Boolean,
 	modStats: [
 		{
 			name: String,
-			cleared: Boolean,
+			cleared: String,
 			row: Number,
 		},
 	],
@@ -26,10 +26,11 @@ const sheetSchema = new Schema({
 
 const userSchema = new Schema({
 	username: String,
+	roles: Array,
 	totalMods: Number,
 	totalClears: Number,
-	totalModsIncludingArchived: Number,
-	totalClearsIncludingArchived: Number,
+	// totalModsIncludingArchived: Number,
+	// totalClearsIncludingArchived: Number,
 	sheets: [sheetSchema],
 });
 
