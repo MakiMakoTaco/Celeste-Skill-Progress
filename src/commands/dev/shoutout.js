@@ -160,7 +160,7 @@ module.exports = {
 								logChannel.send(`Error messaging in shoutouts: ${error}`);
 							}
 
-							await User.findOneAndUpdate({ username: user.username }, user);
+							await User.replaceOne({ username: user.username }, user);
 
 							interaction.editReply('DB updated');
 						}
