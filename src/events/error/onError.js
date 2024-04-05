@@ -12,6 +12,7 @@ async function logErrorToFile(error, client) {
 		const zelda = await client.users.fetch('442795347849379879');
 
 		await zelda.send(`An error occurred: ${error.message}`);
+		console.log(error);
 	} catch (error) {
 		console.error('Error alerting:', error);
 	}

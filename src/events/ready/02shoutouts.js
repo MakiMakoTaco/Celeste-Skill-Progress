@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const Shoutout = require('../../schemas/Shoutout');
 const User = require('../../schemas/UserStats');
 const {
 	getFile,
@@ -7,29 +7,20 @@ const {
 	getUsersData,
 } = require('../../utils/checkSheets');
 
-module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('scan')
-		.setDescription(
-			'Scans the Google Sheets for the latest data and updates the database.',
-		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+module.exports = async (client) => {
+	let shoutout = await Shoutout.findOne({ enabled: true });
+	if (shoutout.enabled) {
+		shoutouts();
+	}
 
-	run: async ({ interaction, client }) => {
-		if (interaction.user.id !== '442795347849379879') {
-			return interaction.reply({
-				content: 'Only the bot owner can use this command.',
-				ephemeral: true,
-			});
+	setInterval(async () => {
+		shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
+		if (shoutout.enabled) {
+			shoutouts();
 		}
+	}, 300_000);
 
-		await interaction.deferReply();
-
-		// const channel = await client.channels.fetch('1224754665363738645');
-		// const message = await channel.messages.fetch('1225886750539386980');
-		// await message.edit('test');
-		// return;
-
+	async function shoutouts() {
 		try {
 			// Get data from Google Sheets
 			const file = await getFile();
@@ -44,7 +35,7 @@ module.exports = {
 			// Comparing changes
 			try {
 				const shoutoutChannel = await client.channels.fetch(
-					'1224754665363738645',
+					'927897791932542986',
 				);
 
 				const guild = await client.guilds.fetch('927897210471989270'); // Fetch CSR server
@@ -160,6 +151,7 @@ module.exports = {
 								}
 							}
 
+							// Give the user the new roles (or higher up when I grab the roles from the server)
 							// try {
 							// 	rolesToGive.forEach(role => {
 
@@ -176,11 +168,10 @@ module.exports = {
 							logChannel.send(`Error messaging in shoutouts: ${error}`);
 						}
 
-						// await User.updateOne(matchingUser, user, {
-						// 	upsert: true,
-						// });
+						await User.updateOne(matchingUser, user, {
+							upsert: true,
+						});
 					}
-					// }
 				});
 			} catch (error) {
 				console.error(error);
@@ -188,5 +179,5 @@ module.exports = {
 		} catch (error) {
 			console.error(error);
 		}
-	},
+	}
 };

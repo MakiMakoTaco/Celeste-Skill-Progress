@@ -7,6 +7,8 @@ const fs = require('fs');
 
 const client = new Client({
 	intents: IntentsBitField.Flags.MessageContent,
+	intents: IntentsBitField.Flags.Guilds,
+	intents: IntentsBitField.Flags.GuildMembers,
 });
 
 // Log unhandled exceptions

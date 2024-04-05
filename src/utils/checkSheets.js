@@ -1,5 +1,7 @@
+// THIS IS AN UPDATED VERSION OF PROCCESS SHEETS
+
 // Import required modules
-const numberLetterConversion = require('../../src/utils/numberLetterConversion');
+const numberLetterConversion = require('./numberLetterConversion');
 const { google } = require('googleapis');
 
 // Create Google Sheets API client
@@ -160,12 +162,10 @@ async function getDefaultUserData(file, sheetValues) {
 		return null;
 	}
 
-	let defaultData = [];
+	let defaultSheetData = [];
 
 	let totalMods = 0;
-	// let totalClears = 0;
-
-	// let usersData = [];
+	let totalModsIncludingArchived = 0;
 
 	await Promise.all(
 		file.sheets.map(async (sheet) => {
@@ -175,29 +175,17 @@ async function getDefaultUserData(file, sheetValues) {
 			const sheetIndex = sheetOrder.indexOf(sheetName);
 
 			const rowCount = sheet.properties.gridProperties.rowCount;
-			// const columnCount = sheet.properties.gridProperties.columnCount;
 
 			let sheetMapCount = 0;
-			// let totalSheetClears;
 
 			const mapColumn = sheetValues[sheetIndex]?.values[0] || [];
 
-			// for (let i = 1; i < columnCount; i++) {
-			// const userColumn = numberLetterConversion.numberToColumn(i + 1);
-			// const username =
-			// 	sheetValues.data.valueRanges[sheetIndex]?.values[i]?.[1] || null;
-
-			// const userClearData =
-			// 	sheetValues.data.valueRanges[sheetIndex]?.values[i] || [];
-
 			const challenges = [];
 			const category = [];
-			// const categoryMapsBeaten = [];
 			const mapCountForRank = [];
 			const mapCountForPlusRank = [];
 
 			for (let i = 0; i < rowCount; i++) {
-				// const userClear = userClearData[k] || null;
 				const mapName = mapColumn[i];
 
 				if (!mapName) continue;
@@ -218,7 +206,6 @@ async function getDefaultUserData(file, sheetValues) {
 						sheetMapCount = parseInt(
 							nameSplit[nameSplit.length - 1].replace(')', '').trim(),
 						);
-						// totalSheetClears = parseInt(userClear) || 0;
 					} else {
 						let challengeNumber = nameSplit[nameSplit.length - 1];
 
@@ -240,7 +227,6 @@ async function getDefaultUserData(file, sheetValues) {
 							mapCountForRank.push(challengeNumber);
 						} else {
 							mapCountForPlusRank.push(challengeNumber);
-							// categoryMapsBeaten.push(userClear || '0');
 						}
 					}
 				} else {
@@ -255,64 +241,36 @@ async function getDefaultUserData(file, sheetValues) {
 			for (let i = 0; i < category.length; i++) {
 				challenges.push({
 					name: category[i].name,
-					// totalClears: parseInt(categoryMapsBeaten[i]),
 					totalClears: 0,
 					clearsForRank: mapCountForRank[i],
 					clearsForPlusRank: mapCountForPlusRank[i],
+					hasRank: false,
+					hasPlusRank: false,
 					modStats: category[i].modStats,
 				});
 			}
 
-			// // Find existing user
-			// const existingUserIndex = usersData.findIndex(
-			// 	(user) => user.username === username,
-			// );
+			if (!sheetName.includes('Archived')) totalMods += sheetMapCount;
+			totalModsIncludingArchived += sheetMapCount;
 
-			totalMods += sheetMapCount;
-
-			// if (defaultData.length < 0) {
-			// 	console.log('data exists');
-			// 	// Push sheet data to existing user
-			// 	defaultData[0].sheets.push({
-			// 		name: sheetName,
-			// 		// userColumn,
-			// 		userColumn: null,
-			// 		totalMods: sheetMapCount,
-			// 		// totalClears: totalSheetClears,
-			// 		totalClears: 0,
-			// 		challenges,
-			// 	});
-			// } else {
 			// Create a default user
-			defaultData.push({
-				// // username,
-				// username: null,
-				// totalMods,
-				// // totalClears: totalSheetClears,
-				// totalClears: 0,
-				// sheets: [
-				// {
+			defaultSheetData.push({
 				name: sheetName,
-				// userColumn,
 				userColumn: null,
 				totalMods: sheetMapCount,
-				// totalClears: totalSheetClears,
 				totalClears: 0,
 				challenges,
-				// 		},
-				// 	],
 			});
-			// }
-			// }
 		}),
 	);
 
 	const defaultUserData = {
 		username: null,
 		totalMods,
-		// totalClears: totalSheetClears,
 		totalClears: 0,
-		sheets: defaultData.map((sheet) => sheet),
+		totalModsIncludingArchived,
+		totalClearsIncludingArchived: 0,
+		sheets: defaultSheetData.map((sheet) => sheet),
 	};
 
 	return defaultUserData;
@@ -349,65 +307,31 @@ async function getUsersData(file, sheetValues, defaultData) {
 			for (let i = 1; i < columnCount; i++) {
 				const userColumn = numberLetterConversion.numberToColumn(i + 1);
 				const username = sheetValues[sheetIndex]?.values[i]?.[1] || null;
-
 				const userClearData = sheetValues[sheetIndex]?.values[i] || [];
 
 				let totalSheetClears = 0;
 				const challenges = [];
-				const category = [];
-				const categoryMapsBeaten = [];
-				const mapCountForRank = [];
-				const mapCountForPlusRank = [];
+				const modStats = [];
 
 				for (let k = 0; k < rowCount; k++) {
-					const userClear = userClearData[k] || null;
+					const userClear = userClearData[k] ? true : false;
 					const mapName = mapColumnData[k];
 
 					if (!mapName) continue;
 
 					if (
-						k === 0 ||
-						k === 1 ||
-						k === 2 ||
-						(mapName.includes(' Challenges - Clear') &&
-							!mapName.includes('Total')) ||
-						mapName.includes('Total')
+						k !== 0 ||
+						k !== 1 ||
+						k !== 2 ||
+						(!mapName.includes(' Challenges - Clear') &&
+							mapName.includes('Total')) ||
+						!mapName.includes('Total (')
 					) {
-						const nameSplit = mapName.split(' ');
-
-						if (k === 0 || k === 1) {
-							continue;
-						} else if (k === 2) {
-							sheetMapCount = parseInt(
-								nameSplit[nameSplit.length - 1].replace(')', '').trim(),
-							);
-							totalSheetClears = parseInt(userClear) || 0;
-						} else {
-							let challengeNumber = nameSplit[nameSplit.length - 1];
-
-							if (challengeNumber.includes(')')) {
-								challengeNumber = challengeNumber.replace(')', '');
-							}
-
-							challengeNumber = challengeNumber.trim();
-
-							if (
-								mapName &&
-								mapName.includes(' Challenges - Clear') &&
-								!mapName.includes('Total')
-							) {
-								category.push({
-									name: mapName.split(' Challenges - Clear')[0].trim(),
-									modStats: [],
-								});
-								mapCountForRank.push(challengeNumber);
-							} else {
-								mapCountForPlusRank.push(challengeNumber);
-								categoryMapsBeaten.push(userClear || '0');
-							}
+						if (userClear === true) {
+							totalSheetClears += 1;
 						}
-					} else {
-						category[category.length - 1].modStats.push({
+
+						modStats.push({
 							name: mapName,
 							cleared: userClear,
 							row: k + 1,
@@ -415,13 +339,29 @@ async function getUsersData(file, sheetValues, defaultData) {
 					}
 				}
 
-				for (let k = 0; k < category.length; k++) {
+				const defaultChallengeData = defaultData.sheets[sheetIndex].challenges;
+				for (let k = 0; k < defaultChallengeData.length; k++) {
+					const challengeMods = modStats.filter(
+						(mod) =>
+							mod.row >= (defaultChallengeData[k].modStats[0]?.row || 0) &&
+							mod.row <=
+								(defaultChallengeData[k].modStats[
+									defaultChallengeData[k].modStats.length - 1
+								]?.row || Infinity),
+					);
+
+					const totalClears = challengeMods.filter(
+						(mod) => mod.cleared === true,
+					).length;
 					challenges.push({
-						name: category[k].name,
-						totalClears: parseInt(categoryMapsBeaten[k]),
-						clearsForRank: parseInt(mapCountForRank[k]),
-						clearsForPlusRank: parseInt(mapCountForPlusRank[k]),
-						modStats: category[k].modStats,
+						name: defaultChallengeData[k].name,
+						totalClears,
+						clearsForRank: defaultChallengeData[k].clearsForRank,
+						clearsForPlusRank: defaultChallengeData[k].clearsForPlusRank,
+						hasRank: totalClears >= defaultChallengeData[k].clearsForRank,
+						hasPlusRank:
+							totalClears === defaultChallengeData[k].clearsForPlusRank,
+						modStats: challengeMods,
 					});
 				}
 
@@ -436,6 +376,8 @@ async function getUsersData(file, sheetValues, defaultData) {
 						roles: [],
 						totalMods: defaultData.totalMods,
 						totalClears: 0,
+						totalModsIncludingArchived: defaultData.totalModsIncludingArchived,
+						totalClearsIncludingArchived: 0,
 						sheets: defaultData.sheets.map((sheet) => ({ ...sheet })),
 					});
 
@@ -443,7 +385,11 @@ async function getUsersData(file, sheetValues, defaultData) {
 				}
 
 				// Push sheet data to existing user
-				usersData[existingUserIndex].totalClears += totalSheetClears;
+				if (!sheetName.includes('Archived')) {
+					usersData[existingUserIndex].totalClears += totalSheetClears;
+				}
+				usersData[existingUserIndex].totalClearsIncludingArchived +=
+					totalSheetClears;
 
 				usersData[existingUserIndex].sheets[sheetIndex] = {
 					name: sheetName,
