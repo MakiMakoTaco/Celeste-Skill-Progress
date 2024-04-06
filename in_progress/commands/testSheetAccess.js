@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { google } = require('googleapis');
-const credentials = require('../csrCredentials.json');
+const credentials = require('../../csrCredentials.json');
 
 module.exports = {
 	data: new SlashCommandBuilder()
