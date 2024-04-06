@@ -8,7 +8,7 @@ const {
 } = require('../../utils/checkSheets');
 
 module.exports = async (client) => {
-	let shoutout = await Shoutout.findOne({ enabled: true });
+	let shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
 	if (shoutout.enabled) {
 		shoutouts();
 	}
@@ -73,7 +73,7 @@ module.exports = async (client) => {
 						sheet.challenges.forEach((challenge) => {
 							if (challenge.totalClears >= challenge.clearsForRank) {
 								const role = `${challenge.name}${
-									sheet.name.includes('Catstare') ? '' : ` ${sheet.name}`
+									!sheet.name.includes('-Side') ? '' : ` ${sheet.name}`
 								}`;
 
 								if (!user.roles.includes(role)) {
@@ -82,7 +82,7 @@ module.exports = async (client) => {
 
 								if (challenge.totalClears === challenge.clearsForPlusRank) {
 									const plusRole = `${challenge.name}+${
-										sheet.name.includes('Catstare') ? '' : ` ${sheet.name}`
+										!sheet.name.includes('-Side') ? '' : ` ${sheet.name}`
 									}`;
 
 									if (!user.roles.includes(plusRole)) {
