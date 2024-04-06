@@ -134,21 +134,19 @@ module.exports = async (client) => {
 							sortedRoles.reverse();
 							// console.log(sortedRoles[0].members.size);
 
-							if (user.username === 'IamTNT') {
-								let editedMessage = '';
-								for (let i = 0; i < sortedRoles.length; i++) {
-									editedMessage = `**Congratulations to our newest ${
-										sortedRoles[i]?.length > 0
-											? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
-											: `${sortedRoles[i]}`
-									} rank, ${user.username}!**`;
+							let editedMessage = '';
+							for (let i = 0; i < sortedRoles.length; i++) {
+								editedMessage = `**Congratulations to our newest ${
+									sortedRoles[i]?.length > 0
+										? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
+										: `${sortedRoles[i]}`
+								} rank, ${user.username}!**`;
 
-									const message = await shoutoutChannel.send(
-										`Congratulations to `,
-									);
+								const message = await shoutoutChannel.send(
+									`Congratulations to `,
+								);
 
-									await message.edit(editedMessage);
-								}
+								await message.edit(editedMessage);
 							}
 
 							// Give the user the new roles (or higher up when I grab the roles from the server)
