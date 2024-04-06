@@ -292,146 +292,155 @@ module.exports = {
 					idle: 60_000,
 				});
 
-				collector.on('collect', async (interaction) => {
-					const oldSheetNumber = sheetNumber || 0;
+				try {
+					collector.on('collect', async (interaction) => {
+						const oldSheetNumber = sheetNumber || 0;
 
-					switch (interaction.customId) {
-						case 'backPage':
-							pageNumber--;
+						switch (interaction.customId) {
+							case 'backPage':
+								pageNumber--;
 
-							if (pageNumber === -1) {
-								pageNumber =
-									currentEmbed[sheetNumber][challengeNumber].length - 1;
-							}
+								if (pageNumber === -1) {
+									pageNumber =
+										currentEmbed[sheetNumber][challengeNumber].length - 1;
+								}
 
-							break;
-						case 'forwardPage':
-							pageNumber++;
+								break;
+							case 'forwardPage':
+								pageNumber++;
 
-							if (
-								pageNumber === currentEmbed[sheetNumber][challengeNumber].length
-							) {
+								if (
+									pageNumber ===
+									currentEmbed[sheetNumber][challengeNumber].length
+								) {
+									pageNumber = 0;
+								}
+
+								break;
+							case 'challenge1':
+								challengeNumber--;
+
+								if (challengeNumber === -1) {
+									challengeNumber = currentEmbed[sheetNumber].length - 1;
+								}
+
 								pageNumber = 0;
-							}
+								break;
+							case 'challenge3':
+								challengeNumber++;
 
-							break;
-						case 'challenge1':
-							challengeNumber--;
+								if (challengeNumber === currentEmbed[sheetNumber].length) {
+									challengeNumber = 0;
+								}
 
-							if (challengeNumber === -1) {
-								challengeNumber = currentEmbed[sheetNumber].length - 1;
-							}
+								pageNumber = 0;
+								break;
+							case 'sheet1':
+								sheetNumber--;
 
-							pageNumber = 0;
-							break;
-						case 'challenge3':
-							challengeNumber++;
+								if (sheetNumber === -1) {
+									sheetNumber = currentEmbed.length - 1;
+								}
 
-							if (challengeNumber === currentEmbed[sheetNumber].length) {
+								if (
+									challengeNumber >= currentEmbed[sheetNumber].length ||
+									currentEmbed[oldSheetNumber].length !==
+										currentEmbed[sheetNumber].length
+								) {
+									challengeNumber = 0;
+								}
+
+								pageNumber = 0;
+								break;
+							case 'sheet3':
+								sheetNumber++;
+
+								if (sheetNumber === currentEmbed.length) {
+									sheetNumber = 0;
+								}
+
+								if (
+									challengeNumber >= currentEmbed[sheetNumber].length ||
+									currentEmbed[oldSheetNumber].length !==
+										currentEmbed[sheetNumber].length
+								) {
+									challengeNumber = 0;
+								}
+
+								pageNumber = 0;
+								break;
+							case 'all':
+								clearOption = 'all';
+								pageNumber = 0;
 								challengeNumber = 0;
-							}
-
-							pageNumber = 0;
-							break;
-						case 'sheet1':
-							sheetNumber--;
-
-							if (sheetNumber === -1) {
-								sheetNumber = currentEmbed.length - 1;
-							}
-
-							if (
-								challengeNumber >= currentEmbed[sheetNumber].length ||
-								currentEmbed[oldSheetNumber].length !==
-									currentEmbed[sheetNumber].length
-							) {
-								challengeNumber = 0;
-							}
-
-							pageNumber = 0;
-							break;
-						case 'sheet3':
-							sheetNumber++;
-
-							if (sheetNumber === currentEmbed.length) {
 								sheetNumber = 0;
-							}
-
-							if (
-								challengeNumber >= currentEmbed[sheetNumber].length ||
-								currentEmbed[oldSheetNumber].length !==
-									currentEmbed[sheetNumber].length
-							) {
+								break;
+							case 'cleared':
+								clearOption = 'cleared';
+								pageNumber = 0;
 								challengeNumber = 0;
-							}
+								sheetNumber = 0;
+								break;
+							case 'uncleared':
+								clearOption = 'uncleared';
+								pageNumber = 0;
+								challengeNumber = 0;
+								sheetNumber = 0;
+								break;
+						}
 
-							pageNumber = 0;
-							break;
-						case 'all':
-							clearOption = 'all';
-							pageNumber = 0;
-							challengeNumber = 0;
-							sheetNumber = 0;
-							break;
-						case 'cleared':
-							clearOption = 'cleared';
-							pageNumber = 0;
-							challengeNumber = 0;
-							sheetNumber = 0;
-							break;
-						case 'uncleared':
-							clearOption = 'uncleared';
-							pageNumber = 0;
-							challengeNumber = 0;
-							sheetNumber = 0;
-							break;
-					}
+						currentEmbed = embeds[clearOption];
 
-					currentEmbed = embeds[clearOption];
+						// Update labels and rows
+						updateLabels(
+							buttons,
+							currentEmbed,
+							pageNumber,
+							challengeNumber,
+							sheetNumber,
+						);
 
-					// Update labels and rows
-					updateLabels(
-						buttons,
-						currentEmbed,
-						pageNumber,
-						challengeNumber,
-						sheetNumber,
-					);
+						updateRows(
+							rows,
+							buttons,
+							currentEmbed,
+							clearOption,
+							pageNumber,
+							challengeNumber,
+							sheetNumber,
+						);
 
-					updateRows(
-						rows,
-						buttons,
-						currentEmbed,
-						clearOption,
-						pageNumber,
-						challengeNumber,
-						sheetNumber,
-					);
-
-					// Update embed
-					page = currentEmbed[sheetNumber][challengeNumber][pageNumber];
-					interaction.update({
-						embeds: [page],
-						components: allRows,
-					});
-				});
-
-				collector.on('end', () => {
-					allRows.forEach((row) => {
-						row.components.forEach((button) => {
-							button.setDisabled(true);
+						// Update embed
+						page = currentEmbed[sheetNumber][challengeNumber][pageNumber];
+						interaction.update({
+							embeds: [page],
+							components: allRows,
 						});
 					});
+				} catch (error) {
+					console.log('Error using user buttons: ', error);
+				}
 
-					interaction.editReply({
-						embeds: [page],
-						components: allRows,
+				try {
+					collector.on('end', () => {
+						allRows.forEach((row) => {
+							row.components.forEach((button) => {
+								button.setDisabled(true);
+							});
+						});
+
+						interaction.editReply({
+							embeds: [page],
+							components: allRows,
+						});
 					});
-				});
+				} catch (error) {
+					console.log('Error ending user buttons: ', error);
+				}
 			}
 		} catch (error) {
 			console.log(`There was an error in ${__dirname}: `, error);
-			interaction.editReply(
+			interaction.followUp(
 				'There was an unknown error running this command. Please try again in a minute and if the issue persists ping or contact `hyrulemaki`',
 			);
 		}
