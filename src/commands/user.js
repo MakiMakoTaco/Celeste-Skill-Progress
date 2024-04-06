@@ -37,6 +37,8 @@ module.exports = {
 		),
 
 	run: async ({ interaction }) => {
+		await interaction.deferReply();
+
 		const startPos = [];
 		const start = interaction.options?.getString('start');
 		let clearOption = interaction.options?.getString('clears') || 'all';
@@ -61,7 +63,7 @@ module.exports = {
 				if (userAlias) {
 					username = userAlias.sheetName;
 				} else {
-					interaction.reply({
+					interaction.followUp({
 						content:
 							'You currently do not have a CSR username connected to this Discord account. Please either enter a username when running this command or connect one by running `/username`.',
 						ephemeral: true,
@@ -70,8 +72,6 @@ module.exports = {
 					return;
 				}
 			}
-
-			await interaction.deferReply();
 
 			const userData = await processSheets.getUserData(username);
 
