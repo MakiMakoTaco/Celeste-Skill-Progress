@@ -28,9 +28,11 @@ module.exports = {
 			const message = await interaction.channel.messages.fetch(messageID);
 			await message.edit(messageContent);
 			await interaction.reply(`Edited message with ID ${messageID}`);
+			interaction.deleteReply();
 		} catch (error) {
 			console.error(error);
 			await interaction.reply(`Error editing message with ID ${messageID}`);
+			interaction.deleteReply();
 		}
 	},
 };
