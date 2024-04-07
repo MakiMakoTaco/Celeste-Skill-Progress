@@ -133,15 +133,13 @@ module.exports = async (client) => {
 
 							let editedMessage = '';
 							for (let i = 0; i < sortedRoles.length; i++) {
-								editedMessage = `**Congratulations to our newest ${
+								editedMessage = `**Congrats to our newest ${
 									sortedRoles[i]?.length > 0
 										? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
 										: `${sortedRoles[i]}`
 								} rank, ${user.username}!**`;
 
-								const message = await shoutoutChannel.send(
-									`Congratulations to `,
-								);
+								const message = await shoutoutChannel.send(`Congrats to `);
 
 								await message.edit(editedMessage);
 							}
