@@ -10,9 +10,7 @@ const {
 module.exports = async (client) => {
 	let shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
 
-	console.log('Shoutout:', shoutout);
 	if (shoutout.enabled) {
-		console.log('Running shoutouts');
 		shoutouts();
 	}
 
@@ -31,17 +29,17 @@ module.exports = async (client) => {
 			// Comparing changes
 			try {
 				const shoutoutChannel = await client.channels.fetch(
-					'1224754665363738645',
+					'927897791932542986',
 				);
 
 				const guild = await client.guilds.fetch('927897210471989270'); // Fetch CSR server
 				const guildRoles = await guild.roles.fetch(); // Fetch all roles in the server
 				// const guildMembers = await guild.members.fetch(); // Fetch all members in the server
 
-				console.log('Fetched users');
-
 				usersData.forEach(async (user) => {
 					let matchingUser = defaultUser;
+					let matchSheet = '';
+					let matchColumn = '';
 
 					for (const sheet of user.sheets) {
 						if (sheet.userColumn !== null) {
@@ -56,15 +54,13 @@ module.exports = async (client) => {
 
 							if (existingUser) {
 								matchingUser = existingUser;
+								matchSheet = sheet.name;
+								matchColumn = sheet.userColumn;
 								user.roles.push(...existingUser.roles);
 							}
 
 							break;
 						}
-					}
-					if (user.username === 'Yohan') {
-						console.log('User:', user);
-						console.log('Matching User:', matchingUser);
 					}
 
 					if (matchingUser.totalClears === user.totalClears) return;
@@ -135,11 +131,6 @@ module.exports = async (client) => {
 							sortedRoles.reverse();
 							// console.log(sortedRoles[0].members.size);
 
-							console.log(
-								'Roles to shoutout:',
-								sortedRoles.map((r) => r.name),
-							);
-
 							let editedMessage = '';
 							for (let i = 0; i < sortedRoles.length; i++) {
 								editedMessage = `**Congratulations to our newest ${
@@ -172,9 +163,20 @@ module.exports = async (client) => {
 							logChannel.send(`Error messaging in shoutouts: ${error}`);
 						}
 
-						await User.updateOne(matchingUser, user, {
-							upsert: true,
-						});
+						await User.updateOne(
+							{
+								sheets: {
+									$elemMatch: {
+										name: matchSheet,
+										userColumn: matchColumn,
+									},
+								},
+							},
+							user,
+							{
+								upsert: true,
+							},
+						);
 					}
 				});
 			} catch (error) {
