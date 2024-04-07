@@ -21,7 +21,7 @@ module.exports = async (client) => {
 		if (shoutout.enabled) {
 			shoutouts();
 		}
-	}, 300_000);
+	}, 10_000);
 
 	async function shoutouts() {
 		try {
@@ -38,7 +38,7 @@ module.exports = async (client) => {
 			// Comparing changes
 			try {
 				const shoutoutChannel = await client.channels.fetch(
-					'927897791932542986',
+					'1224754665363738645',
 				);
 
 				const guild = await client.guilds.fetch('927897210471989270'); // Fetch CSR server
