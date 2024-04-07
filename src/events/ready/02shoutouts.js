@@ -9,7 +9,10 @@ const {
 
 module.exports = async (client) => {
 	let shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
+
+	console.log('Shoutout:', shoutout);
 	if (shoutout.enabled) {
+		console.log('Running shoutouts');
 		shoutouts();
 	}
 
@@ -41,6 +44,8 @@ module.exports = async (client) => {
 				const guild = await client.guilds.fetch('927897210471989270'); // Fetch CSR server
 				const guildRoles = await guild.roles.fetch(); // Fetch all roles in the server
 				// const guildMembers = await guild.members.fetch(); // Fetch all members in the server
+
+				console.log('Fetched users');
 
 				usersData.forEach(async (user) => {
 					let matchingUser = defaultUser;
