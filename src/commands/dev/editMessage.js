@@ -17,7 +17,7 @@ module.exports = {
 	// 		.setRequired(true),
 	// ),
 
-	run: async ({ interaction }) => {
+	run: async ({ interaction, client }) => {
 		if (interaction.user.id !== '442795347849379879') {
 			return interaction.reply('Only the bot owner can run this command.');
 		}
