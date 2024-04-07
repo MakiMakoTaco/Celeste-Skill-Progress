@@ -191,6 +191,6 @@ module.exports = async (client) => {
 			if (shoutout.enabled) {
 				shoutouts();
 			}
-		}, 10_000);
+		}, 120_000);
 	}
 };
