@@ -16,13 +16,6 @@ module.exports = async (client) => {
 		shoutouts();
 	}
 
-	setInterval(async () => {
-		shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
-		if (shoutout.enabled) {
-			shoutouts();
-		}
-	}, 10_000);
-
 	async function shoutouts() {
 		try {
 			// Get data from Google Sheets
@@ -190,5 +183,12 @@ module.exports = async (client) => {
 		} catch (error) {
 			console.error(error);
 		}
+
+		setTimeout(async () => {
+			shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
+			if (shoutout.enabled) {
+				shoutouts();
+			}
+		}, 10_000);
 	}
 };
