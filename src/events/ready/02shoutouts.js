@@ -64,6 +64,10 @@ module.exports = async (client) => {
 							break;
 						}
 					}
+					if (user.username === 'Yohan') {
+						console.log('User:', user);
+						console.log('Matching User:', matchingUser);
+					}
 
 					if (matchingUser.totalClears === user.totalClears) return;
 
@@ -108,8 +112,7 @@ module.exports = async (client) => {
 								rolesToGive.push(guildRoles.find((r) => r.name === role));
 							});
 
-							rolesToGive.sort((a, b) => a.rawPosition - b.rawPosition);
-							rolesToGive.reverse();
+							rolesToGive.sort((a, b) => b.rawPosition - a.rawPosition);
 
 							rolesToGive.forEach((role) => {
 								if (doneRoles.includes(role)) return;
@@ -133,6 +136,11 @@ module.exports = async (client) => {
 
 							sortedRoles.reverse();
 							// console.log(sortedRoles[0].members.size);
+
+							console.log(
+								'Roles to shoutout:',
+								sortedRoles.map((r) => r.name),
+							);
 
 							let editedMessage = '';
 							for (let i = 0; i < sortedRoles.length; i++) {
