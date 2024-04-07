@@ -6,7 +6,7 @@ module.exports = {
 		.setDescription('Edit a bot message')
 		.addStringOption((option) =>
 			option
-				.setName('messageId')
+				.setName('message_id')
 				.setDescription('The message ID')
 				.setRequired(true),
 		)
@@ -21,7 +21,7 @@ module.exports = {
 		if (interaction.user.id !== '442795347849379879') {
 			return interaction.reply('Only the bot owner can run this command.');
 		}
-		const messageID = interaction.options.getString('messageId');
+		const messageID = interaction.options.getString('message_id');
 		const messageContent = interaction.options.getString('message-content');
 
 		try {
