@@ -194,11 +194,11 @@ function updateRows(
 			}
 		} else {
 			if (sheetNumber === 0) {
-				const movedButton = rows[1].components.shift();
-				rows[1].components.push(movedButton);
+				const movedButton = rows[2].components.shift();
+				rows[2].components.push(movedButton);
 			} else if (sheetNumber === 2) {
-				const movedButton = rows[1].components.pop();
-				rows[1].components.unshift(movedButton);
+				const movedButton = rows[2].components.pop();
+				rows[2].components.unshift(movedButton);
 			}
 		}
 
