@@ -35,6 +35,8 @@ module.exports = {
 		),
 
 	run: async ({ interaction }) => {
+		await interaction.deferReply();
+
 		const subcommand = interaction.options.getSubcommand();
 		const userId = interaction.user.id;
 
@@ -43,15 +45,13 @@ module.exports = {
 			const alreadySet = await UserAlias.findOne({ discordId: userId });
 
 			if (alreadySet) {
-				interaction.reply(
+				interaction.editReply(
 					`You already have a CSR username set, please remove it first as Zelda is too lazy to implement an update function atm.`,
 				);
 				return;
 			}
 
 			const username = interaction.options.getString('username');
-
-			await interaction.deferReply();
 
 			const userExists = await checkUserExists(username);
 
