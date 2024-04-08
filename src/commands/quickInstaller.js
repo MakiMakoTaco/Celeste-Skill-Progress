@@ -20,8 +20,10 @@ module.exports = {
 
 	run: async ({ interaction }) => {
 		const side = interaction.options.getString('side');
+
 		let sideResponse = side;
 		let installer = '';
+
 		switch (side) {
 			case 'a-side':
 				sideResponse = 'A-Side';

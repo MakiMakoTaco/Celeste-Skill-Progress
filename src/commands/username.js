@@ -52,6 +52,9 @@ module.exports = {
 			}
 
 			const username = interaction.options.getString('username');
+			await interaction.editReply(
+				`Checking if ${username} exists in the sheets...`,
+			);
 
 			const userExists = await checkUserExists(username);
 
@@ -81,14 +84,14 @@ module.exports = {
 					time: 120_000,
 				});
 
-				collector.on('collect', (i) => {
+				collector.on('collect', async (i) => {
 					if (i.customId === 'cancel') {
-						interaction.editReply({
+						await interaction.editReply({
 							content: 'Cancelled setting username',
 							components: [],
 						});
 					} else if (i.customId === 'confirm') {
-						UserAlias.create({
+						await UserAlias.create({
 							discordId: userId,
 							sheetName: username,
 						})
@@ -106,13 +109,18 @@ module.exports = {
 								});
 							});
 					}
+
+					collector.stop();
 				});
 
-				collector.on('end', () => {
-					interaction.editReply({
-						content: 'Setting username timed out',
-						components: [],
-					});
+				collector.on('end', (i) => {
+					console.log('Collector ended');
+					if (i.size === 0) {
+						interaction.editReply({
+							content: 'Setting username timed out',
+							components: [],
+						});
+					}
 				});
 			} else {
 				UserAlias.create({
@@ -136,9 +144,6 @@ module.exports = {
 
 			// interaction.reply(`Your CSR username has been set to ${username}`);
 		} else if (subcommand === 'check') {
-			// Check the username
-			await interaction.deferReply();
-
 			const user = await UserAlias.findOne({ discordId: userId });
 
 			if (user) {
@@ -155,9 +160,9 @@ module.exports = {
 			if (user) {
 				await user.deleteOne();
 
-				interaction.reply(`Your CSR username has been removed`);
+				interaction.editReply(`Your CSR username has been removed`);
 			} else {
-				interaction.reply(`You do not yet have a CSR username set`);
+				interaction.editReply(`You do not yet have a CSR username set`);
 			}
 		}
 	},

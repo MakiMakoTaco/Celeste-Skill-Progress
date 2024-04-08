@@ -1,3 +1,9 @@
+/**
+ * Add a way to get details for an entire tier
+ *
+ *
+ */
+
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const processSheets = require('../utils/processSheets');
 
