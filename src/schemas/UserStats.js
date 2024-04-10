@@ -24,14 +24,18 @@ const sheetSchema = new Schema({
 	challenges: [challengeSchema],
 });
 
-const userSchema = new Schema({
-	username: String,
-	roles: Array,
-	totalMods: Number,
-	totalClears: Number,
-	totalModsIncludingArchived: Number,
-	totalClearsIncludingArchived: Number,
-	sheets: [sheetSchema],
-});
+const userSchema = new Schema(
+	{
+		username: String,
+		discordMember: Object,
+		roles: Array,
+		totalMods: Number,
+		totalClears: Number,
+		totalModsIncludingArchived: Number,
+		totalClearsIncludingArchived: Number,
+		sheets: [sheetSchema],
+	},
+	{ timestamps: true },
+);
 
 module.exports = model('UserStats', userSchema);

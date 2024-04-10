@@ -1,5 +1,6 @@
 const Shoutout = require('../../schemas/Shoutout');
 const User = require('../../schemas/UserStats');
+const { checkForms, getMember } = require('../../utils/checkForms');
 const {
 	getFile,
 	getSheetValues,
@@ -8,7 +9,18 @@ const {
 } = require('../../utils/checkSheets');
 
 module.exports = async (client) => {
-	let shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
+	const logChannel = await client.channels.fetch(process.env.LOG_CHANNEL_ID);
+
+	const guildId = '927897210471989270'; // CSR server
+	// const guildId = '773124995684761630'; // test server
+
+	let shoutout = await Shoutout.findOne({ serverId: guildId }); // CSR server
+	// let shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
+
+	const guild = await client.guilds.fetch(guildId); // Fetch CSR server
+	const guildRoles = await guild.roles.fetch(); // Fetch all roles in the server
+	const shoutoutChannel = await guild.channels.fetch('927897791932542986'); // CSR shoutout channel
+	// const shoutoutChannel = await guild.channels.fetch('1224754665363738645'); // test channel
 
 	if (shoutout.enabled) {
 		shoutouts();
@@ -16,6 +28,8 @@ module.exports = async (client) => {
 
 	async function shoutouts() {
 		try {
+			const members = await guild.members.fetch(); // Fetch all members in the server
+
 			// Get data from Google Sheets
 			const file = await getFile();
 			const sheet = await getSheetValues(file[1]);
@@ -26,16 +40,10 @@ module.exports = async (client) => {
 			// Get data for all users
 			const usersData = await getUsersData(file[0], sheet, defaultUser);
 
+			const formValues = await checkForms();
+
 			// Comparing changes
 			try {
-				const shoutoutChannel = await client.channels.fetch(
-					'927897791932542986',
-				);
-
-				const guild = await client.guilds.fetch('927897210471989270'); // Fetch CSR server
-				const guildRoles = await guild.roles.fetch(); // Fetch all roles in the server
-				// const guildMembers = await guild.members.fetch(); // Fetch all members in the server
-
 				usersData.forEach(async (user) => {
 					let matchingUser = defaultUser;
 					let matchSheet = '';
@@ -129,7 +137,6 @@ module.exports = async (client) => {
 							});
 
 							sortedRoles.reverse();
-							// console.log(sortedRoles[0].members.size);
 
 							let editedMessage = '';
 							for (let i = 0; i < sortedRoles.length; i++) {
@@ -144,19 +151,49 @@ module.exports = async (client) => {
 								await message.edit(editedMessage);
 							}
 
-							// Give the user the new roles (or higher up when I grab the roles from the server)
-							// try {
-							// 	rolesToGive.forEach(role => {
+							// Give the user the new roles
+							try {
+								const member = await getMember(
+									formValues,
+									members,
+									user.username,
+								);
 
-							// 	});
-							// } catch (error) {
+								if (member) {
+									const memberRoles = await member.roles.cache;
 
-							// }
+									for (const role of user.roles) {
+										if (memberRoles.find((r) => r.name === role)) {
+											continue;
+										} else {
+											try {
+												const roleToAdd = guildRoles.find(
+													(r) => r.name === role,
+												);
+
+												if (roleToAdd) {
+													await member.roles.add(roleToAdd);
+												}
+											} catch (error) {
+												console.log(error);
+												logChannel.send(
+													`Error adding ${role} to ${user.username}: ${error}`,
+												);
+											}
+										}
+									}
+								} else {
+									logChannel.send(
+										`Error getting member ${user.username} for roles`,
+									);
+								}
+							} catch (error) {
+								console.log(error);
+								logChannel.send(
+									`Error adding roles to ${user.username}: ${error}`,
+								);
+							}
 						} catch (error) {
-							const logChannel = await client.channels.fetch(
-								process.env.LOG_CHANNEL_ID,
-							);
-
 							console.log(error);
 							logChannel.send(`Error messaging in shoutouts: ${error}`);
 						}
@@ -185,10 +222,10 @@ module.exports = async (client) => {
 		}
 
 		setTimeout(async () => {
-			shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
+			shoutout = await Shoutout.findOne({ serverId: guildId });
 			if (shoutout.enabled) {
 				shoutouts();
 			}
-		}, 120_000);
+		}, 600_000);
 	}
 };
