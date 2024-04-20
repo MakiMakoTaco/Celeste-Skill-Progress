@@ -28,7 +28,7 @@ async function getMember(values, members, sheetName) {
 		if (!memberInfo) return null;
 
 		const member = members.find(
-			(member) => member.user.username === memberInfo[1],
+			(member) => member.user.username === memberInfo[1].toLowerCase(),
 		);
 
 		return member;
