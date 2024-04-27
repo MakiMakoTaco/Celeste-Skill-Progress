@@ -24,15 +24,23 @@ async function checkForms() {
 async function getMember(values, members, sheetName) {
 	try {
 		const memberInfo = values.find((username) => username[0] === sheetName);
+		const username = memberInfo[1].toLowerCase();
 
 		if (!memberInfo) return null;
 
-		const member = members.find(
-			(member) => member.user.username === memberInfo[1].toLowerCase(),
-		);
+		const member = members.find((member) => member.user.username === username);
 
 		return member;
 	} catch (error) {
+		try {
+			const member = members.find(
+				(member) => member.nickname === memberInfo[1],
+			);
+
+			return member;
+		} catch (error) {
+			console.log(error);
+		}
 		console.log(error);
 	}
 }
