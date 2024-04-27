@@ -28,19 +28,14 @@ async function getMember(values, members, sheetName) {
 
 		if (!memberInfo) return null;
 
-		const member = members.find((member) => member.user.username === username);
+		let member = members.find((member) => member.user.username === username);
+
+		if (!member) {
+			member = members.find((member) => member.nickname === memberInfo[1]);
+		}
 
 		return member;
 	} catch (error) {
-		try {
-			const member = members.find(
-				(member) => member.nickname === memberInfo[1],
-			);
-
-			return member;
-		} catch (error) {
-			console.log(error);
-		}
 		console.log(error);
 	}
 }
