@@ -19,6 +19,16 @@ module.exports = async (client) => {
 
 	const guild = await client.guilds.fetch(guildId); // Fetch CSR server
 	const guildRoles = await guild.roles.fetch(); // Fetch all roles in the server
+
+	// Extract the number from the role name using regular expressions
+	const roleNumbers = [];
+	guildRoles.forEach((role) => {
+		const match = role.name.match(/\d+/);
+		if (match && parseInt(match[0]) > 0) {
+			roleNumbers.push([match, role.name]);
+		}
+	});
+
 	const shoutoutChannel = await guild.channels.fetch('927897791932542986'); // CSR shoutout channel
 	// const shoutoutChannel = await guild.channels.fetch('1224754665363738645'); // test channel
 
@@ -73,6 +83,14 @@ module.exports = async (client) => {
 
 					if (matchingUser.totalClears === user.totalClears) return;
 
+					roleNumbers.forEach(([number, role]) => {
+						if (user.totalClears >= number) {
+							if (!user.roles.includes(role)) {
+								user.roles.push(role);
+							}
+						}
+					});
+
 					user.sheets.forEach((sheet) => {
 						if (sheet.name.includes('Archived')) return;
 
@@ -120,6 +138,14 @@ module.exports = async (client) => {
 								if (doneRoles.includes(role)) return;
 
 								if (
+									roleNumbers.find(
+										([number, roleName]) => roleName === role.name,
+									)
+								) {
+									return;
+								}
+
+								if (
 									role.name.includes('+') &&
 									newRoles.find((r) => r === role.name.replace('+', ''))
 								) {
@@ -138,17 +164,19 @@ module.exports = async (client) => {
 
 							sortedRoles.reverse();
 
-							let editedMessage = '';
-							for (let i = 0; i < sortedRoles.length; i++) {
-								editedMessage = `**Congrats to our newest ${
-									sortedRoles[i]?.length > 0
-										? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
-										: `${sortedRoles[i]}`
-								} rank, ${user.username}!**`;
+							if (sortedRoles.length !== 0) {
+								let editedMessage = '';
+								for (let i = 0; i < sortedRoles.length; i++) {
+									editedMessage = `**Congrats to our newest ${
+										sortedRoles[i]?.length > 0
+											? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
+											: `${sortedRoles[i]}`
+									} rank, ${user.username}!**`;
 
-								const message = await shoutoutChannel.send(`Congrats to `);
+									const message = await shoutoutChannel.send(`Congrats to `);
 
-								await message.edit(editedMessage);
+									await message.edit(editedMessage);
+								}
 							}
 
 							// Give the user the new roles
