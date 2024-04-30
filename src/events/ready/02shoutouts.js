@@ -23,9 +23,9 @@ module.exports = async (client) => {
 	// Extract the number from the role name using regular expressions
 	const roleNumbers = [];
 	guildRoles.forEach((role) => {
-		const match = role.name.match(/\d+ clears/);
-		if (match && parseInt(match[0]) > 0) {
-			roleNumbers.push([match, role.name]);
+		const match = role.name.match(/(\d+) clears/);
+		if (match) {
+			roleNumbers.push([parseInt(match[1]), role.name]);
 		}
 	});
 
@@ -207,6 +207,8 @@ module.exports = async (client) => {
 													`Error adding ${role} to ${user.username}: ${error}`,
 												);
 											}
+
+											logChannel.send(`Added ${role} to ${user.username}`);
 										}
 									}
 								} else {
