@@ -187,16 +187,10 @@ module.exports = async (client) => {
 									user.username,
 								);
 
-								// console.log(member);
 								if (member) {
 									const memberRoles = await member.roles.cache;
-									// console.log(memberRoles);
-
 									for (const role of user.roles) {
-										// console.log(role);
-
 										if (memberRoles.find((r) => r.name === role)) {
-											// console.log(memberRoles.find((r) => r.name === role));
 											continue;
 										} else {
 											try {
@@ -205,7 +199,6 @@ module.exports = async (client) => {
 												);
 
 												if (roleToAdd) {
-													// console.log('role to add:', roleToAdd);
 													await member.roles.add(roleToAdd);
 												}
 											} catch (error) {
