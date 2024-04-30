@@ -179,49 +179,49 @@ module.exports = async (client) => {
 								}
 							}
 
-							// Give the user the new roles
-							try {
-								const member = await getMember(
-									formValues,
-									members,
-									user.username,
-								);
+							// // Give the user the new roles
+							// try {
+							// 	const member = await getMember(
+							// 		formValues,
+							// 		members,
+							// 		user.username,
+							// 	);
 
-								if (member) {
-									const memberRoles = await member.roles.cache;
-									for (const role of user.roles) {
-										if (memberRoles.find((r) => r.name === role)) {
-											continue;
-										} else {
-											try {
-												const roleToAdd = guildRoles.find(
-													(r) => r.name === role,
-												);
+							// 	if (member) {
+							// 		const memberRoles = await member.roles.cache;
+							// 		for (const role of user.roles) {
+							// 			if (memberRoles.find((r) => r.name === role)) {
+							// 				continue;
+							// 			} else {
+							// 				try {
+							// 					const roleToAdd = guildRoles.find(
+							// 						(r) => r.name === role,
+							// 					);
 
-												if (roleToAdd) {
-													await member.roles.add(roleToAdd);
-												}
-											} catch (error) {
-												console.log(error);
-												logChannel.send(
-													`Error adding ${role} to ${user.username}: ${error}`,
-												);
-											}
+							// 					if (roleToAdd) {
+							// 						await member.roles.add(roleToAdd);
+							// 					}
+							// 				} catch (error) {
+							// 					console.log(error);
+							// 					logChannel.send(
+							// 						`Error adding ${role} to ${user.username}: ${error}`,
+							// 					);
+							// 				}
 
-											logChannel.send(`Added ${role} to ${user.username}`);
-										}
-									}
-								} else {
-									logChannel.send(
-										`Error getting member ${user.username} for roles`,
-									);
-								}
-							} catch (error) {
-								console.log(error);
-								logChannel.send(
-									`Error adding roles to ${user.username}: ${error}`,
-								);
-							}
+							// 				logChannel.send(`Added ${role} to ${user.username}`);
+							// 			}
+							// 		}
+							// 	} else {
+							// 		logChannel.send(
+							// 			`Error getting member ${user.username} for roles`,
+							// 		);
+							// 	}
+							// } catch (error) {
+							// 	console.log(error);
+							// 	logChannel.send(
+							// 		`Error adding roles to ${user.username}: ${error}`,
+							// 	);
+							// }
 						} catch (error) {
 							console.log(error);
 							logChannel.send(`Error messaging in shoutouts: ${error}`);
@@ -242,6 +242,8 @@ module.exports = async (client) => {
 							},
 						);
 					}
+
+					logChannel.send(`Updated data for ${user.username}`);
 				});
 			} catch (error) {
 				console.error(error);
