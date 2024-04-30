@@ -23,7 +23,7 @@ module.exports = async (client) => {
 	// Extract the number from the role name using regular expressions
 	const roleNumbers = [];
 	guildRoles.forEach((role) => {
-		const match = role.name.match(/\d+/);
+		const match = role.name.match(/\d+ clears/);
 		if (match && parseInt(match[0]) > 0) {
 			roleNumbers.push([match, role.name]);
 		}
