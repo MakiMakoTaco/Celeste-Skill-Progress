@@ -1,6 +1,5 @@
 archived/
 node_modules
-package-lock.json
 error.log
 csrCredentials.json
 .env
