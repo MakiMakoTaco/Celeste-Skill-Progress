@@ -129,8 +129,6 @@ module.exports = {
 						// Push modStats to the fields, up to a limit
 						const maxModsToShow = 15;
 
-						let clear = false;
-						let unclear = false;
 						for (const mod of challenge.modStats) {
 							const field = {
 								name: `${mod.name}: ${
@@ -142,10 +140,8 @@ module.exports = {
 							currentFields.push(field);
 
 							if (mod.cleared) {
-								clear = true;
 								currentClearFields.push(field);
 							} else {
-								unclear = true;
 								currentUnclearFields.push(field);
 							}
 
@@ -211,10 +207,10 @@ module.exports = {
 
 						sheetEmbeds.push(challengeEmbeds);
 
-						if (clear === true) {
+						if (clearedEmbeds.length > 0) {
 							sheetClearedEmbeds.push(clearedEmbeds);
 						}
-						if (unclear === true) {
+						if (unclearedEmbeds.length > 0) {
 							sheetUnclearedEmbeds.push(unclearedEmbeds);
 						}
 					}

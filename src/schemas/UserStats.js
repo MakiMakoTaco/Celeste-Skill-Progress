@@ -10,7 +10,7 @@ const challengeSchema = new Schema({
 	modStats: [
 		{
 			name: String,
-			cleared: String,
+			cleared: Boolean,
 			row: Number,
 		},
 	],
