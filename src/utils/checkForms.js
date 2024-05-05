@@ -36,7 +36,7 @@ async function getMember(values, members, sheetName) {
 
 		return member;
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 }
 

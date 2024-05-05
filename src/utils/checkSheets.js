@@ -44,12 +44,12 @@ async function getFile() {
  * @param {string[]} sheetNames - An array of sheet names to fetch values from.
  * @returns {Promise<Object>} A promise that resolves to the fetched sheet values.
  */
-async function getSheetValues(sheetNames = []) {
+async function getSheetValues(sheetNames = [], dimension = 'COLUMNS') {
 	try {
 		const result = await sheetsAPI.spreadsheets.values.batchGet({
 			spreadsheetId,
 			ranges: sheetNames,
-			majorDimension: 'COLUMNS',
+			majorDimension: dimension,
 		});
 		return result.data.valueRanges;
 	} catch (error) {
@@ -69,7 +69,7 @@ async function findMaps(file, sheetValues) {
 	const categoryTotals = [];
 	const mapCount = [];
 
-	const sheets = file.data.sheets;
+	const sheets = file.sheets;
 
 	if (sheets && sheets.length > 0) {
 		for (let i = 0; i < sheets.length; i++) {
@@ -92,7 +92,7 @@ async function findMaps(file, sheetValues) {
 					const hyperlink = firstValue.hyperlink || null;
 					const note = firstValue.note || null;
 
-					const mapName = sheetValues.data.valueRanges[0]?.values[0][j] || null;
+					const mapName = sheetValues[i]?.values[0][j] || null;
 
 					if (mapName === 'Celeste Custom Maps' || !mapName) {
 						continue;
@@ -405,6 +405,44 @@ async function getUsersData(file, sheetValues, defaultData) {
 	return usersData;
 }
 
+async function checkUserExists(username) {
+	const file = await getFile();
+
+	if (!file[0] || file[0].length === 0) {
+		return null;
+	}
+
+	const values = await getSheetValues(file[1], 'ROWS');
+	const sheetOrder = [];
+
+	let userExists = false;
+
+	await Promise.all(
+		file[0].sheets.map(async (sheet) => {
+			const sheetName = sheet.properties.title;
+			sheetOrder.push(sheetName);
+
+			const sheetIndex = sheetOrder.indexOf(sheetName);
+			const secondRowValues = values[sheetIndex].values[1];
+
+			const userColumnIndex = secondRowValues.findIndex(
+				(value) => value.toLowerCase() === username.toLowerCase(),
+			);
+
+			if (userColumnIndex !== -1) {
+				userExists = true;
+				return; // Exit the loop
+			}
+		}),
+	);
+
+	if (userExists) {
+		return true;
+	}
+
+	return null;
+}
+
 // Export the functions
 module.exports = {
 	getFile,
@@ -412,4 +450,5 @@ module.exports = {
 	findMaps,
 	getDefaultUserData,
 	getUsersData,
+	checkUserExists,
 };

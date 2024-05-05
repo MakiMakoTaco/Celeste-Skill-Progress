@@ -23,8 +23,6 @@ module.exports = {
 				return;
 			}
 
-			console.log(`stdout: ${stdout}`);
-
 			if (stdout.includes('Already up to date.')) {
 				await interaction.editReply('Bot is already up to date');
 				return;

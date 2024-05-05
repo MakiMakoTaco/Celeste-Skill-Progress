@@ -5,7 +5,7 @@ const {
 	ActionRowBuilder,
 	ComponentType,
 } = require('discord.js');
-const { checkUserExists } = require('../utils/processSheets');
+const { checkUserExists } = require('../utils/checkSheets');
 const UserAlias = require('../schemas/UserAlias');
 
 module.exports = {
@@ -53,7 +53,7 @@ module.exports = {
 
 			const username = interaction.options.getString('username');
 			await interaction.editReply(
-				`Checking if ${username} exists in the sheets...`,
+				`Checking if ${username} exists in the sheets <a:CelesteLoad:1236474786155200593>`,
 			);
 
 			const userExists = await checkUserExists(username);
@@ -114,7 +114,6 @@ module.exports = {
 				});
 
 				collector.on('end', (i) => {
-					console.log('Collector ended');
 					if (i.size === 0) {
 						interaction.editReply({
 							content: 'Setting username timed out',

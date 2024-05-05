@@ -5,7 +5,7 @@
  */
 
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const processSheets = require('../utils/processSheets');
+const { getFile, getSheetValues, findMaps } = require('../utils/checkSheets');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -58,8 +58,11 @@ module.exports = {
 	run: async ({ interaction }) => {
 		async function getSheets() {
 			try {
-				const sheet = await processSheets.findMaps();
-				return sheet;
+				// Get data from Google Sheets
+				const file = await getFile();
+				const sheet = await getSheetValues(file[1]);
+				const maps = await findMaps(file[0], sheet);
+				return maps;
 			} catch (error) {
 				console.error(error);
 				interaction.editReply(
@@ -83,7 +86,7 @@ module.exports = {
 			await interaction.editReply(
 				`Searching for ${
 					strict ? 'a map called' : 'maps containing the name'
-				} ${name}...`,
+				} ${name} <a:CelesteLoad:1236474786155200593>`,
 			);
 
 			const sheets = await getSheets();
@@ -178,6 +181,10 @@ module.exports = {
 			const archived = interaction.options?.getString('archived') || 'false';
 			// const filter = filter
 
+			interaction.editReply(
+				`Deciding on a random map <a:CelesteLoad:1236474786155200593>`,
+			);
+
 			const sheetResultsArray = await getSheets();
 
 			const sheetResults = sheetResultsArray[0] || [];
@@ -218,7 +225,6 @@ module.exports = {
 				} catch (error) {
 					console.error(error);
 					interaction.editReply(`Error fetching map or it's info.`);
-					console.log('randomMap:', randomMap);
 				}
 			} else {
 				interaction.editReply(
