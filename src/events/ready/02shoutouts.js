@@ -243,6 +243,8 @@ module.exports = async (client) => {
 						);
 					}
 				});
+
+				logChannel.send('Shoutouts completed');
 			} catch (error) {
 				console.error(error);
 			}

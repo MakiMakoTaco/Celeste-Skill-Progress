@@ -314,7 +314,7 @@ async function getUsersData(file, sheetValues, defaultData) {
 				const modStats = [];
 
 				for (let k = 0; k < rowCount; k++) {
-					const userClear = userClearData[k] ? true : false;
+					const userClear = userClearData[k] == 'Clear!' ? true : false;
 					const mapName = mapColumnData[k];
 
 					if (!mapName) continue;
