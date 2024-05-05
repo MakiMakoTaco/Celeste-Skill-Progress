@@ -226,25 +226,23 @@ module.exports = async (client) => {
 							console.log(error);
 							logChannel.send(`Error messaging in shoutouts: ${error}`);
 						}
+					}
 
-						await User.updateOne(
-							{
-								sheets: {
-									$elemMatch: {
-										name: matchSheet,
-										userColumn: matchColumn,
-									},
+					await User.updateOne(
+						{
+							sheets: {
+								$elemMatch: {
+									name: matchSheet,
+									userColumn: matchColumn,
 								},
 							},
-							user,
-							{
-								upsert: true,
-							},
-						);
-					}
+						},
+						user,
+						{
+							upsert: true,
+						},
+					);
 				});
-
-				logChannel.send('Shoutouts completed');
 			} catch (error) {
 				console.error(error);
 			}
