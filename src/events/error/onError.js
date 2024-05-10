@@ -5,6 +5,7 @@ module.exports = async (error, client, handler) => {
 
 	// Restart the bot
 	await handler.reloadCommands();
+	await handler.reloadEvents();
 };
 
 async function logErrorToFile(error, client) {
