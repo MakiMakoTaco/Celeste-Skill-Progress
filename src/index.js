@@ -15,7 +15,7 @@ const client = new Client({
 process.on('uncaughtException', (error) => {
 	logErrorToFile(error);
 	console.error('Unhandled Exception:', error);
-	process.exit(1);
+	logErrorToFile(error);
 });
 
 // Log unhandled promise rejections
@@ -57,7 +57,7 @@ async function logErrorToFile(error) {
 	}
 
 	const currentTime = new Date().toISOString();
-	const errorMessage = `${currentTime}: ${error.stack}\n`;
+	const errorMessage = `${currentTime}: ${error}\n`;
 
 	fs.appendFile('error.log', errorMessage, (err) => {
 		if (err) {
