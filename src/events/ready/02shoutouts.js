@@ -207,8 +207,6 @@ module.exports = async (client) => {
 													`Error adding ${role} to ${user.username}: ${error}`,
 												);
 											}
-
-											logChannel.send(`Added ${role} to ${user.username}`);
 										}
 									}
 								} else {
