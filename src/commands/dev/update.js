@@ -32,8 +32,6 @@ module.exports = {
 				`Pull successful! \n\`${stdout}\`\nRestarting...`,
 			);
 
-			console.error(`stderr: ${stderr}`);
-
 			// Restart the bot
 			await handler.reloadCommands();
 			await handler.reloadEvents();
