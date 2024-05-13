@@ -81,6 +81,7 @@ module.exports = async (client) => {
 						}
 					}
 
+					if (user.username === 'woxens') console.log(user.totalClears);
 					if (matchingUser.totalClears === user.totalClears) return;
 
 					roleNumbers.forEach(([number, role]) => {
