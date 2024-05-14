@@ -221,7 +221,13 @@ module.exports = async (client) => {
 								);
 							}
 						} catch (error) {
-							console.log(error, 'User:', user, 'Roles:', newRoles);
+							console.log(
+								error,
+								'Username:',
+								user.username,
+								'Roles:',
+								newRoles,
+							);
 							logChannel.send(
 								`Error shouting out ${user.username} with the ${newRoles.join(
 									', ',
