@@ -221,8 +221,12 @@ module.exports = async (client) => {
 								);
 							}
 						} catch (error) {
-							console.log(error);
-							logChannel.send(`Error messaging in shoutouts: ${error}`);
+							console.log(error, 'User:', user, 'Roles:', newRoles);
+							logChannel.send(
+								`Error shouting out ${user.username} with the ${newRoles.join(
+									', ',
+								)} roles in shoutouts channel: ${error}`,
+							);
 						}
 					}
 
