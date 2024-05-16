@@ -16,7 +16,7 @@ module.exports = {
 		await interaction.reply('Pulling from git...');
 
 		// Execute git pull
-		exec('git pull', async (error, stdout, stderr) => {
+		exec('git pull', async (error, stdout) => {
 			if (error) {
 				console.error(`Error executing git pull: ${error.message}`);
 				await interaction.editReply(`Error pulling: ${error.message}`);
@@ -44,7 +44,7 @@ module.exports = {
 		});
 	},
 
-	// options: {
-	// 	devOnly: true,
-	// },
+	options: {
+		devOnly: true,
+	},
 };
