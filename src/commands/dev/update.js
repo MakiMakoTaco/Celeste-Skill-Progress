@@ -1,5 +1,6 @@
 const { exec } = require('child_process');
 const { SlashCommandBuilder } = require('discord.js');
+const { restartBot } = require('../..');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -29,6 +30,7 @@ module.exports = {
 			// Restart the bot
 			await handler.reloadCommands();
 			await handler.reloadEvents();
+			await restartBot(client);
 
 			try {
 				await interaction.followUp('Bot restarted successfully!');
