@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { restartBot } = require('../../');
 
 module.exports = async (error, client, handler) => {
 	logErrorToFile(error, client);
