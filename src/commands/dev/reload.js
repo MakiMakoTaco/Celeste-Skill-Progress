@@ -23,15 +23,16 @@ module.exports = {
 		const subcommand = interaction.options.getSubcommand();
 
 		if (subcommand === 'commands') {
-			await interaction.reply('Reloading commands');
+			await interaction.editReply('Reloading commands');
 			await handler.reloadCommands();
 			await interaction.editReply('Commands reloaded');
 		} else if (subcommand === 'events') {
-			await interaction.reply('Reloading events');
+			await interaction.editReply('Reloading events');
 			await handler.reloadEvents();
 			await restartBot(client);
 			await interaction.editReply('Events reloaded');
 		} else if (subcommand === 'all') {
+			await interaction.editReply('Reloading all commands and events');
 			await handler.reloadCommands();
 			await handler.reloadEvents();
 			await restartBot(client);
