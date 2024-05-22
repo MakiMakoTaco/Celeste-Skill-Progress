@@ -19,6 +19,7 @@ module.exports = async (client) => {
 
 	const guild = await client.guilds.fetch(guildId); // Fetch CSR server
 	const guildRoles = await guild.roles.fetch(); // Fetch all roles in the server
+	let members = await guild.members.fetch(); // Fetch all members in the server
 
 	// Extract the number from the role name using regular expressions
 	const roleNumbers = [];
@@ -38,8 +39,6 @@ module.exports = async (client) => {
 
 	async function shoutouts() {
 		try {
-			const members = await guild.members.fetch(); // Fetch all members in the server
-
 			// Get data from Google Sheets
 			const file = await getFile();
 			const sheet = await getSheetValues(file[1]);
@@ -181,11 +180,17 @@ module.exports = async (client) => {
 
 							// Give the user the new roles
 							try {
-								const member = await getMember(
+								let member = await getMember(
 									formValues,
 									members,
 									user.username,
 								);
+
+								if (!member) {
+									members = await guild.members.fetch();
+
+									member = await getMember(formValues, members, user.username);
+								}
 
 								if (member) {
 									const memberRoles = await member.roles.cache;
