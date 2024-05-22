@@ -80,7 +80,11 @@ module.exports = async (client) => {
 						}
 					}
 
-					if (matchingUser.totalClears === user.totalClears) return;
+					if (
+						matchingUser.totalClearsIncludingArchived ===
+						user.totalClearsIncludingArchived
+					)
+						return;
 
 					roleNumbers.forEach(([number, role]) => {
 						if (user.totalClears >= number) {
