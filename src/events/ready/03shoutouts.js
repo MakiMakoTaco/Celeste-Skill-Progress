@@ -9,7 +9,9 @@ const {
 } = require('../../utils/checkSheets');
 
 module.exports = async (client) => {
-	const logChannel = await client.channels.fetch(process.env.LOG_CHANNEL_ID);
+	const errorChannel = await client.channels.fetch(
+		process.env.ERROR_CHANNEL_ID,
+	);
 
 	const guildId = '927897210471989270'; // CSR server
 	// const guildId = '773124995684761630'; // test server
@@ -212,20 +214,20 @@ module.exports = async (client) => {
 												}
 											} catch (error) {
 												console.log(error);
-												logChannel.send(
+												errorChannel.send(
 													`Error adding ${role} to ${user.username}: ${error}`,
 												);
 											}
 										}
 									}
 								} else {
-									logChannel.send(
+									errorChannel.send(
 										`Error getting member ${user.username} for roles`,
 									);
 								}
 							} catch (error) {
 								console.log(error);
-								logChannel.send(
+								errorChannel.send(
 									`Error adding roles to ${user.username}: ${error}`,
 								);
 							}
@@ -237,7 +239,7 @@ module.exports = async (client) => {
 								'Roles:',
 								newRoles,
 							);
-							logChannel.send(
+							errorChannel.send(
 								`Error shouting out ${user.username} with the ${newRoles.join(
 									', ',
 								)} roles in shoutouts channel: ${error}`,
