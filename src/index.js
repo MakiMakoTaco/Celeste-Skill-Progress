@@ -45,7 +45,7 @@ process.on('unhandledRejection', (reason, promise) => {
 	logErrorToFile(reason);
 });
 
-async function startBot() {
+(async () => {
 	try {
 		await mongoose.connect(process.env.MONGODB_URI);
 		console.log('Connected to DB.');
@@ -65,10 +65,6 @@ async function startBot() {
 		console.error('An error occurred:', error);
 		process.exit(1);
 	}
-}
-
-(async () => {
-	await startBot();
 })();
 
 async function restartBot(client) {
