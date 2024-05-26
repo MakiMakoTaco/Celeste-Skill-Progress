@@ -98,6 +98,7 @@ module.exports = {
 						userData.totalMods - userData.totalClears
 					} left)`;
 					const description = `**${sheet.name}**: ${sheet.totalClears}/${sheet.totalMods} clears`;
+					const color = interaction.member?.displayColor || 0;
 
 					for (const challenge of sheet.challenges) {
 						let challengeEmbeds = [];
@@ -151,6 +152,7 @@ module.exports = {
 									title,
 									description,
 									fields: [challengeField, ...currentFields],
+									color,
 								});
 
 								// Reset fields for the next set of mods
@@ -162,6 +164,7 @@ module.exports = {
 									title,
 									description,
 									fields: [challengeField, ...currentClearFields],
+									color,
 								});
 
 								// Reset fields for the next set of mods
@@ -173,6 +176,7 @@ module.exports = {
 									title,
 									description,
 									fields: [challengeField, ...currentUnclearFields],
+									color,
 								});
 
 								// Reset fields for the next set of mods
@@ -186,6 +190,7 @@ module.exports = {
 								title,
 								description,
 								fields: [challengeField, ...currentFields],
+								color,
 							});
 						}
 
@@ -194,6 +199,7 @@ module.exports = {
 								title,
 								description,
 								fields: [challengeField, ...currentClearFields],
+								color,
 							});
 						}
 
@@ -202,6 +208,7 @@ module.exports = {
 								title,
 								description,
 								fields: [challengeField, ...currentUnclearFields],
+								color,
 							});
 						}
 
@@ -225,12 +232,16 @@ module.exports = {
 				}
 
 				if (embeds.cleared.length === 0) {
-					embeds.cleared.push({ title: 'No cleared mods' });
+					embeds.cleared.push({
+						title: 'No cleared mods',
+						color,
+					});
 				}
 				if (embeds.uncleared.length === 0) {
 					embeds.uncleared.push({
 						title: 'No uncleared mods',
 						description: 'Congrats, you have cleared all mods! Now what?',
+						color,
 					});
 				}
 
