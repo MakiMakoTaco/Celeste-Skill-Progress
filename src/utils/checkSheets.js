@@ -250,7 +250,9 @@ async function getDefaultUserData(file, sheetValues) {
 				});
 			}
 
-			if (!sheetName.includes('Archived')) totalMods += sheetMapCount;
+			if (!sheetName.includes('Archived') && !sheetName.includes('DLC')) {
+				totalMods += sheetMapCount;
+			}
 			totalModsIncludingArchived += sheetMapCount;
 
 			// Create a default user
