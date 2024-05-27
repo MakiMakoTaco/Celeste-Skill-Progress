@@ -30,12 +30,14 @@ module.exports = (interaction) => {
 		{ name: 'Catstare: Genesis', value: '3, 0' },
 		{ name: 'Catstare: Exodus', value: '3, 1' },
 
-		{ name: 'Archived: DLC 1', value: '4, 0' },
-		{ name: 'Archived: DLC 2', value: '4, 1' },
-		{ name: 'Archived: DLC 3', value: '4, 2' },
-		{ name: 'Archived: DLC 4', value: '4, 3' },
-		{ name: 'Archived: DLC 5', value: '4, 4' },
-		{ name: 'Archived: DLC 6', value: '4, 5' },
+		{ name: 'DLC: DLC 7', value: '4, 0' },
+
+		{ name: 'Archived: DLC 1', value: '5, 0' },
+		{ name: 'Archived: DLC 2', value: '5, 1' },
+		{ name: 'Archived: DLC 3', value: '5, 2' },
+		{ name: 'Archived: DLC 4', value: '5, 3' },
+		{ name: 'Archived: DLC 5', value: '5, 4' },
+		{ name: 'Archived: DLC 6', value: '5, 5' },
 	];
 
 	const filteredChoices = startOptions.filter((option) =>

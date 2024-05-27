@@ -32,27 +32,37 @@ module.exports = {
 						.setRequired(true),
 				),
 		)
-		.addSubcommand(
-			(random) =>
-				random
-					.setName('random')
-					.setDescription('Randomly picks a map')
-					.addStringOption((archived) =>
-						archived
-							.setName('archived')
-							.setDescription('Wether or not to include archived maps')
-							.addChoices(
-								{ name: 'Include', value: 'true' },
-								{ name: 'Exclude', value: 'false' },
-							)
-							.setRequired(false),
-					),
-			// .addStringOption((filters) =>
-			// 	filters
-			// 		.setName('filters')
-			// 		.setDescription('A specific filter to apply to the random selector') // allow multiple in the future
-			// 		.setAutocomplete(true),
-			// ),
+		.addSubcommand((random) =>
+			random
+				.setName('random')
+				.setDescription('Randomly picks a map')
+				.addIntegerOption((amount) =>
+					amount
+						.setName('amount')
+						.setDescription('The number of random maps to get')
+						.setMinValue(1)
+						.setMaxValue(10),
+				)
+				.addStringOption((filters) =>
+					filters
+						.setName('filters')
+						.setDescription('A specific filter to apply to the random selector') // allow multiple in the future
+						.setAutocomplete(true),
+				)
+				.addBooleanOption((uncleared) =>
+					uncleared
+						.setName('uncleared')
+						.setDescription('Only randomise uncleared maps'),
+				)
+				.addStringOption((archived) =>
+					archived
+						.setName('archived')
+						.setDescription('Include archived maps? Default is false')
+						.addChoices(
+							{ name: 'Include', value: 'true' },
+							{ name: 'Exclude', value: 'false' },
+						),
+				),
 		),
 
 	run: async ({ interaction }) => {
@@ -65,7 +75,7 @@ module.exports = {
 				return maps;
 			} catch (error) {
 				console.error(error);
-				interaction.editReply(
+				await interaction.editReply(
 					`There was an error processing the spreadsheet: ${error.message}. Please try again in a few minutes and if the issue persists then contact \`hyrulemaki\` with the error message.`,
 				);
 				throw error;
@@ -179,10 +189,13 @@ module.exports = {
 			}
 		} else if (subcommand === 'random') {
 			const archived = interaction.options?.getString('archived') || 'false';
-			// const filter = filter
+			const filter = interaction.options?.getString('filters') || 'none';
+			const randomAmount = interaction.options?.getInteger('amount') || 1;
 
-			interaction.editReply(
-				`Deciding on a random map <a:CelesteLoad:1236474786155200593>`,
+			await interaction.editReply(
+				`Deciding on ${randomAmount} random map${
+					randomAmount > 1 ? 's' : ''
+				} <a:CelesteLoad:1236474786155200593>`,
 			);
 
 			const sheetResultsArray = await getSheets();
@@ -190,37 +203,80 @@ module.exports = {
 			const sheetResults = sheetResultsArray[0] || [];
 
 			if (sheetResults.length > 0) {
-				const filteredSheetsLength =
+				let filteredSheetsLength =
 					archived === 'true' ? sheetResults.length : sheetResults.length - 1;
-				let totalMaps = 0;
+				let filteredMaps = [];
+				let sheetIndex = -1;
 
-				for (let i = 0; i < filteredSheetsLength; i++) {
-					totalMaps += sheetResults[i].length;
+				if (filter !== 'none') {
+					const filterArray = filter.split(', ');
+
+					if (parseInt(filterArray[0]) >= 0) {
+						sheetIndex = filterArray[0];
+					}
+
+					if (filterArray[1] !== 'none') {
+						if (sheetIndex >= 0) {
+							filteredMaps = sheetResults[sheetIndex].filter((map) =>
+								map.category.toLowerCase().includes(filterArray[1]),
+							);
+						} else {
+							for (let i = 0; i < filteredSheetsLength; i++) {
+								filteredMaps.push(
+									...sheetResults[i].filter((map) =>
+										map.category.toLowerCase().includes(filterArray[1]),
+									),
+								);
+							}
+						}
+					} else {
+						filteredMaps = sheetResults[sheetIndex];
+					}
+				} else {
+					const resultsWithoutLast = sheetResults.slice(0, -1);
+					filteredMaps = resultsWithoutLast.flat();
 				}
 
-				let randomMap;
 				const mapFields = [];
-				// Randomly select a map from the results
-				let randomIndex = Math.floor(Math.random() * totalMaps);
+				const randomMaps = [];
+				const randomNumbers = [];
 
-				for (let i = 0; i < filteredSheetsLength; i++) {
-					if (randomIndex > sheetResults[i].length) {
-						randomIndex -= sheetResults[i].length;
-					} else {
-						randomMap = sheetResults[i][randomIndex];
-						break;
+				for (let i = 0; i < randomAmount; i++) {
+					let randomIndex = Math.floor(Math.random() * filteredMaps.length);
+
+					while (randomNumbers.includes(randomIndex)) {
+						randomIndex = Math.floor(Math.random() * filteredMaps.length);
 					}
+
+					randomNumbers.push(randomIndex);
+					randomMaps.push(filteredMaps[randomIndex]);
 				}
 
 				try {
-					mapFields.push({
-						name: `This map is found in ${randomMap.sheetName} under the ${randomMap.category} challenge (row ${randomMap.rowNumber}):`,
-						value: randomMap.hyperlink || 'Unable to retrieve link\n',
-					});
+					const mapEmbed = new EmbedBuilder();
 
-					const mapEmbed = new EmbedBuilder()
-						.setTitle(`The random map is: ${randomMap.mapName}`)
-						.setFields(mapFields);
+					if (randomMaps.length === 1) {
+						mapEmbed
+							.setTitle(`The random map is: ${randomMaps[0].mapName}`)
+							.setFields({
+								name: `This map is found in ${randomMaps[0].sheetName} under the ${randomMaps[0].category} challenge (row ${randomMaps[0].rowNumber}):`,
+								value: randomMaps[0].hyperlink || 'Unable to retrieve link\n',
+							});
+					} else {
+						for (let i = 0; i < randomMaps.length; i++) {
+							mapFields.push({
+								name: `Map ${i + 1}: ${randomMaps[i].mapName}`,
+								value: `This map is found in ${
+									randomMaps[i].sheetName
+								} under the ${randomMaps[i].category} challenge (row ${
+									randomMaps[i].rowNumber
+								}):\n${randomMaps[i].hyperlink || 'Unable to retrieve link\n'}`,
+							});
+						}
+
+						mapEmbed.setTitle(`Random maps`).setFields(mapFields);
+					}
+
 					interaction.editReply({ content: null, embeds: [mapEmbed] });
 				} catch (error) {
 					console.error(error);
