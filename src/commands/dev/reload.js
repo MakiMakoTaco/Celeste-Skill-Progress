@@ -28,15 +28,15 @@ module.exports = {
 			await interaction.editReply('Commands reloaded');
 		} else if (subcommand === 'events') {
 			await interaction.editReply('Reloading events');
-			await handler.reloadEvents();
+			// await handler.reloadEvents();
 			await restartBot();
-			await interaction.editReply('Events reloaded');
+			// await interaction.editReply('Events reloaded');
 		} else if (subcommand === 'all') {
 			await interaction.editReply('Reloading all commands and events');
-			await handler.reloadCommands();
-			await handler.reloadEvents();
+			// await handler.reloadCommands();
+			// await handler.reloadEvents();
 			await restartBot();
-			await interaction.editReply('Commands and events reloaded');
+			// await interaction.editReply('Commands and events reloaded');
 		}
 	},
 

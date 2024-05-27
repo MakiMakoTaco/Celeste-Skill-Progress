@@ -28,15 +28,15 @@ module.exports = {
 			);
 
 			// Restart the bot
-			await handler.reloadCommands();
-			await handler.reloadEvents();
+			// await handler.reloadCommands();
+			// await handler.reloadEvents();
 			await restartBot();
 
-			try {
-				await interaction.followUp('Bot restarted successfully!');
-			} catch (error) {
-				await interaction.followUp(`Error restarting bot: ${error.message}`);
-			}
+			// try {
+			// 	await interaction.followUp('Bot restarted successfully!');
+			// } catch (error) {
+			// 	await interaction.followUp(`Error restarting bot: ${error.message}`);
+			// }
 		});
 	},
 

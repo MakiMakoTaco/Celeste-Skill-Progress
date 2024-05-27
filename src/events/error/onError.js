@@ -2,11 +2,11 @@ const fs = require('fs');
 const { restartBot } = require('../../');
 
 module.exports = async (error, client, handler) => {
-	logErrorToFile(error, client);
+	await logErrorToFile(error, client);
 
 	// Restart the bot
-	await handler.reloadCommands();
-	await handler.reloadEvents();
+	// await handler.reloadCommands();
+	// await handler.reloadEvents();
 	await restartBot();
 };
 
