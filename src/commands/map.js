@@ -49,11 +49,11 @@ module.exports = {
 						.setDescription('A specific filter to apply to the random selector') // allow multiple in the future
 						.setAutocomplete(true),
 				)
-				.addBooleanOption((uncleared) =>
-					uncleared
-						.setName('uncleared')
-						.setDescription('Only randomise uncleared maps'),
-				)
+				// .addBooleanOption((uncleared) =>
+				// 	uncleared
+				// 		.setName('uncleared')
+				// 		.setDescription('Only randomise uncleared maps'),
+				// )
 				.addStringOption((archived) =>
 					archived
 						.setName('archived')
