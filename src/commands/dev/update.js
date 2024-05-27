@@ -30,7 +30,7 @@ module.exports = {
 			// Restart the bot
 			await handler.reloadCommands();
 			await handler.reloadEvents();
-			await restartBot(client);
+			await restartBot();
 
 			try {
 				await interaction.followUp('Bot restarted successfully!');

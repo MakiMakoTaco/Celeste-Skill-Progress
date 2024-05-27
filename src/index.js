@@ -61,30 +61,31 @@ process.on('unhandledRejection', (reason, promise) => {
 
 		client.login(process.env.TOKEN);
 	} catch (error) {
-		logErrorToFile(error);
+		await logErrorToFile(error);
 		console.error('An error occurred:', error);
 		process.exit(1);
 	}
 })();
 
-async function restartBot(client) {
-	// Log out the bot and disconnect from the database
-	await client.destroy();
+async function restartBot() {
+	process.exit(1);
+	// // Log out the bot and disconnect from the database
+	// await client.destroy();
 
-	// Start the bot again
-	client = new Client({ intents });
+	// // Start the bot again
+	// client = new Client({ intents });
 
-	// Create a new CommandKit instance
-	new CommandKit({
-		client,
-		commandsPath: path.join(__dirname, 'commands'),
-		eventsPath: path.join(__dirname, 'events'),
-		devGuildIds: ['773124995684761630'],
-		devUserIds: ['442795347849379879'],
-		bulkRegister: true,
-	});
+	// // Create a new CommandKit instance
+	// new CommandKit({
+	// 	client,
+	// 	commandsPath: path.join(__dirname, 'commands'),
+	// 	eventsPath: path.join(__dirname, 'events'),
+	// 	devGuildIds: ['773124995684761630'],
+	// 	devUserIds: ['442795347849379879'],
+	// 	bulkRegister: true,
+	// });
 
-	await client.login(process.env.TOKEN);
+	// await client.login(process.env.TOKEN);
 }
 
 module.exports = { restartBot };

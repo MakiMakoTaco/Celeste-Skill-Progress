@@ -29,13 +29,13 @@ module.exports = {
 		} else if (subcommand === 'events') {
 			await interaction.editReply('Reloading events');
 			await handler.reloadEvents();
-			await restartBot(client);
+			await restartBot();
 			await interaction.editReply('Events reloaded');
 		} else if (subcommand === 'all') {
 			await interaction.editReply('Reloading all commands and events');
 			await handler.reloadCommands();
 			await handler.reloadEvents();
-			await restartBot(client);
+			await restartBot();
 			await interaction.editReply('Commands and events reloaded');
 		}
 	},
