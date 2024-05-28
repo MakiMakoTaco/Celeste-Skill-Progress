@@ -65,7 +65,7 @@ module.exports = {
 				} else {
 					interaction.followUp({
 						content:
-							'You currently do not have a CSR username connected to this Discord account. Please either enter a username when running this command or connect one by running `/username`.',
+							'You currently do not have a CSR username connected to this Discord account. Please either enter a username when running this command or connect one by running `/username set`.',
 						ephemeral: true,
 					});
 
