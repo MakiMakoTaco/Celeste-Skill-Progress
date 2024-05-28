@@ -216,9 +216,9 @@ module.exports = {
 			}
 
 			await interaction.editReply(
-				`Deciding on ${randomAmount}${
+				`Choosing ${randomAmount} random${
 					uncleared !== 'all' ? ` ${uncleared}` : ''
-				} random map${
+				} map${
 					randomAmount > 1 ? 's' : ''
 				} <a:CelesteLoad:1236474786155200593>`,
 			);
@@ -274,6 +274,8 @@ module.exports = {
 					let tempFilteredMaps = [];
 
 					userStats.sheets.forEach((sheet) => {
+						if (archived === 'false' && sheet.name === 'Archived') return;
+
 						sheet.challenges.forEach((challenge) => {
 							if (uncleared === 'uncleared') {
 								tempFilteredMaps.push(
