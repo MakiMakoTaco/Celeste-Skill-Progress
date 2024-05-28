@@ -6,6 +6,8 @@
 
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { getFile, getSheetValues, findMaps } = require('../utils/checkSheets');
+const UserAlias = require('../schemas/UserAlias');
+const UserStats = require('../schemas/UserStats');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -49,11 +51,16 @@ module.exports = {
 						.setDescription('A specific filter to apply to the random selector') // allow multiple in the future
 						.setAutocomplete(true),
 				)
-				// .addBooleanOption((uncleared) =>
-				// 	uncleared
-				// 		.setName('uncleared')
-				// 		.setDescription('Only randomise uncleared maps'),
-				// )
+				.addStringOption((uncleared) =>
+					uncleared
+						.setName('uncleared')
+						.setDescription('A clear type to randomise')
+						.addChoices(
+							{ name: 'Uncleared', value: 'uncleared' },
+							{ name: 'Cleared', value: 'cleared' },
+							{ name: 'All', value: 'all' },
+						),
+				)
 				.addStringOption((archived) =>
 					archived
 						.setName('archived')
@@ -188,12 +195,30 @@ module.exports = {
 				);
 			}
 		} else if (subcommand === 'random') {
-			const archived = interaction.options?.getString('archived') || 'false';
+			const uncleared = interaction.options?.getString('uncleared') || 'all';
 			const filter = interaction.options?.getString('filters') || 'none';
+			const archived = interaction.options?.getString('archived') || 'false';
 			const randomAmount = interaction.options?.getInteger('amount') || 1;
 
+			let username;
+
+			if (uncleared !== 'all') {
+				username = await UserAlias.findOne({
+					discordId: interaction.user.id,
+				});
+
+				if (!username) {
+					await interaction.editReply(
+						'You currently do not have a CSR username connected to this Discord account. Please run `/username set` to set one in order to use the cleared/uncleared filter.',
+					);
+					return;
+				}
+			}
+
 			await interaction.editReply(
-				`Deciding on ${randomAmount} random map${
+				`Deciding on ${randomAmount}${
+					uncleared !== 'all' ? ` ${uncleared}` : ''
+				} random map${
 					randomAmount > 1 ? 's' : ''
 				} <a:CelesteLoad:1236474786155200593>`,
 			);
@@ -203,7 +228,7 @@ module.exports = {
 			const sheetResults = sheetResultsArray[0] || [];
 
 			if (sheetResults.length > 0) {
-				let filteredSheetsLength =
+				const filteredSheetsLength =
 					archived === 'true' ? sheetResults.length : sheetResults.length - 1;
 				let filteredMaps = [];
 				let sheetIndex = -1;
@@ -233,15 +258,66 @@ module.exports = {
 						filteredMaps = sheetResults[sheetIndex];
 					}
 				} else {
-					const resultsWithoutLast = sheetResults.slice(0, -1);
-					filteredMaps = resultsWithoutLast.flat();
+					if (archived === 'true') {
+						filteredMaps = sheetResults.flat();
+					} else {
+						const resultsWithoutLast = sheetResults.slice(0, -1);
+						filteredMaps = resultsWithoutLast.flat();
+					}
+				}
+
+				if (username) {
+					const userStats = await UserStats.findOne({
+						username: username.sheetName,
+					});
+
+					let tempFilteredMaps = [];
+
+					userStats.sheets.forEach((sheet) => {
+						sheet.challenges.forEach((challenge) => {
+							if (uncleared === 'uncleared') {
+								tempFilteredMaps.push(
+									challenge.modStats.filter((mod) => {
+										if (!mod.cleared) {
+											return mod;
+										}
+									}),
+								);
+							} else if (uncleared === 'cleared') {
+								tempFilteredMaps.push(
+									challenge.modStats.filter((mod) => {
+										if (mod.cleared) {
+											return mod;
+										}
+									}),
+								);
+							}
+						});
+					});
+
+					tempFilteredMaps = tempFilteredMaps.flat();
+
+					filteredMaps = filteredMaps.filter((map) =>
+						tempFilteredMaps.some((mod) => mod.name === map.mapName),
+					);
+				}
+
+				if (filteredMaps.length === 0) {
+					await interaction.editReply(
+						`No maps found with the filters provided. Please try again with different filters.`,
+					);
+					return;
 				}
 
 				const mapFields = [];
 				const randomMaps = [];
 				const randomNumbers = [];
+				const amountToGet =
+					randomAmount > filteredMaps.length
+						? filteredMaps.length
+						: randomAmount;
 
-				for (let i = 0; i < randomAmount; i++) {
+				for (let i = 0; i < amountToGet; i++) {
 					let randomIndex = Math.floor(Math.random() * filteredMaps.length);
 
 					while (randomNumbers.includes(randomIndex)) {
