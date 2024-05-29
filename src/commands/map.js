@@ -271,6 +271,13 @@ module.exports = {
 						username: username.sheetName,
 					});
 
+					if (!userStats) {
+						await interaction.editReply(
+							`Unable to find clear details for ${username.sheetName}, please make sure you have the correct username and change it with \`/username\`.`,
+						);
+						return;
+					}
+
 					let tempFilteredMaps = [];
 
 					userStats.sheets.forEach((sheet) => {
