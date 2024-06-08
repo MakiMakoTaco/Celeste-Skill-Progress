@@ -167,8 +167,8 @@ module.exports = {
 						});
 
 						await interaction.editReply({
-							embeds: [mapEmbeds[currentPageNumber]],
-							components: row,
+							embeds: [embeds[currentPageNumber]],
+							components: [row],
 						});
 					});
 				}
