@@ -167,7 +167,7 @@ module.exports = {
 						});
 
 						await interaction.editReply({
-							embeds: [page],
+							embeds: [mapEmbeds[currentPageNumber]],
 							components: row,
 						});
 					});
