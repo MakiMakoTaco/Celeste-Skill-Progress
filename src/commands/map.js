@@ -220,100 +220,105 @@ module.exports = {
 				console.log(mapEmbeds);
 				console.log(mapEmbeds.length, mapFields.length);
 
-				if (mapFields.length < 10) {
-					interaction.editReply({ content: null, embeds: [mapEmbeds] });
-				} else {
-					let currentPageNumber = 0;
+				try {
+					if (mapFields.length < 10) {
+						interaction.editReply({ content: null, embeds: [mapEmbeds] });
+					} else {
+						let currentPageNumber = 0;
 
-					const backPage = new ButtonBuilder()
-						.setCustomId('backPage')
-						.setLabel('PREVIOUS PAGE')
-						.setStyle(ButtonStyle.Primary);
+						const backPage = new ButtonBuilder()
+							.setCustomId('backPage')
+							.setLabel('PREVIOUS PAGE')
+							.setStyle(ButtonStyle.Primary);
 
-					const currentPage = new ButtonBuilder()
-						.setCustomId('currentPage')
-						.setLabel(`${currentPageNumber + 1}/${mapEmbeds.length}`)
-						.setStyle(ButtonStyle.Secondary)
-						.setDisabled(true);
+						const currentPage = new ButtonBuilder()
+							.setCustomId('currentPage')
+							.setLabel(`${currentPageNumber + 1}/${mapEmbeds.length}`)
+							.setStyle(ButtonStyle.Secondary)
+							.setDisabled(true);
 
-					const forwardPage = new ButtonBuilder()
-						.setCustomId('forwardPage')
-						.setLabel('NEXT PAGE')
-						.setStyle(ButtonStyle.Primary);
+						const forwardPage = new ButtonBuilder()
+							.setCustomId('forwardPage')
+							.setLabel('NEXT PAGE')
+							.setStyle(ButtonStyle.Primary);
 
-					const row = new ActionRowBuilder().addComponents(
-						backPage,
-						currentPage,
-						forwardPage,
-					);
+						const row = new ActionRowBuilder().addComponents(
+							backPage,
+							currentPage,
+							forwardPage,
+						);
 
-					const reply = await interaction.editReply({
-						content: '',
-						embeds: [mapEmbeds[0]],
-						components: [row],
-					});
+						const reply = await interaction.editReply({
+							content: '',
+							embeds: [mapEmbeds[0]],
+							components: [row],
+						});
 
-					const filter = (i) => i.user.id === interaction.user.id;
+						const filter = (i) => i.user.id === interaction.user.id;
 
-					const collector = reply.createMessageComponentCollector({
-						componentType: ComponentType.Button,
-						filter,
-						idle: 60_000,
-					});
+						const collector = reply.createMessageComponentCollector({
+							componentType: ComponentType.Button,
+							filter,
+							idle: 60_000,
+						});
 
-					collector.on('collect', async (interaction) => {
-						switch (interaction.customId) {
-							case 'backPage':
-								if (currentPageNumber === 0) {
-									currentPageNumber = mapEmbeds.length - 1;
-								} else {
-									currentPageNumber--;
-								}
+						collector.on('collect', async (interaction) => {
+							switch (interaction.customId) {
+								case 'backPage':
+									if (currentPageNumber === 0) {
+										currentPageNumber = mapEmbeds.length - 1;
+									} else {
+										currentPageNumber--;
+									}
 
-								await row.components[1].setLabel(
-									`${currentPageNumber + 1}/${mapEmbeds.length}`,
-								);
+									await row.components[1].setLabel(
+										`${currentPageNumber + 1}/${mapEmbeds.length}`,
+									);
 
-								await interaction.update({
-									content: '',
-									embeds: [mapEmbeds[currentPageNumber]],
-									components: [row],
+									await interaction.update({
+										content: '',
+										embeds: [mapEmbeds[currentPageNumber]],
+										components: [row],
+									});
+
+									break;
+								case 'forwardPage':
+									if (currentPageNumber === mapEmbeds.length - 1) {
+										currentPageNumber = 0;
+									} else {
+										currentPageNumber++;
+									}
+
+									await row.components[1].setLabel(
+										`${currentPageNumber + 1}/${mapEmbeds.length}`,
+									);
+
+									await interaction.update({
+										content: '',
+										embeds: [mapEmbeds[currentPageNumber]],
+										components: [row],
+									});
+
+									break;
+							}
+						});
+
+						collector.on('end', async () => {
+							allRows.forEach((row) => {
+								row.components.forEach((button) => {
+									button.setDisabled(true);
 								});
+							});
 
-								break;
-							case 'forwardPage':
-								if (currentPageNumber === mapEmbeds.length - 1) {
-									currentPageNumber = 0;
-								} else {
-									currentPageNumber++;
-								}
-
-								await row.components[1].setLabel(
-									`${currentPageNumber + 1}/${mapEmbeds.length}`,
-								);
-
-								await interaction.update({
-									content: '',
-									embeds: [mapEmbeds[currentPageNumber]],
-									components: [row],
-								});
-
-								break;
-						}
-					});
-
-					collector.on('end', async () => {
-						allRows.forEach((row) => {
-							row.components.forEach((button) => {
-								button.setDisabled(true);
+							await interaction.editReply({
+								embeds: [page],
+								components: allRows,
 							});
 						});
-
-						await interaction.editReply({
-							embeds: [page],
-							components: allRows,
-						});
-					});
+					}
+				} catch (error) {
+					console.error(error);
+					await interaction.editReply(`Error outputting map results.`);
 				}
 			} else {
 				interaction.editReply(
