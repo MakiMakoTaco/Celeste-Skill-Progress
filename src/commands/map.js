@@ -4,7 +4,14 @@
  *
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const {
+	SlashCommandBuilder,
+	EmbedBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	ActionRowBuilder,
+	ComponentType,
+} = require('discord.js');
 const { getFile, getSheetValues, findMaps } = require('../utils/checkSheets');
 const UserAlias = require('../schemas/UserAlias');
 const UserStats = require('../schemas/UserStats');
@@ -185,10 +192,129 @@ module.exports = {
 					});
 				});
 
-				const mapEmbed = new EmbedBuilder()
-					.setTitle(`Search results for ${name}`)
-					.setFields(mapFields);
-				interaction.editReply({ content: null, embeds: [mapEmbed] });
+				let mapEmbeds = [];
+
+				const defaultEmbed = new EmbedBuilder().setTitle(
+					`Search results for ${name}`,
+				);
+				// .setFields(mapFields);
+
+				if (mapFields.length > 10) {
+					for (let i = 0; i < mapFields.length; i += 10) {
+						mapEmbeds.push(
+							new EmbedBuilder(defaultEmbed)
+								.setDescription(
+									`Results ${i} - ${
+										i + 10 > mapFields.length ? mapFields.length : i + 10
+									}`,
+								)
+								.setFields(mapFields.slice(i, i + 10)),
+						);
+					}
+				} else {
+					mapEmbeds = new EmbedBuilder()
+						.setTitle(`Search results for ${name}`)
+						.setFields(mapFields);
+				}
+
+				console.log(mapEmbeds);
+				console.log(mapEmbeds.length, mapFields.length);
+
+				if (mapFields.length < 10) {
+					interaction.editReply({ content: null, embeds: [mapEmbeds] });
+				} else {
+					let currentPageNumber = 0;
+
+					const backPage = new ButtonBuilder()
+						.setCustomId('backPage')
+						.setLabel('PREVIOUS PAGE')
+						.setStyle(ButtonStyle.Primary);
+
+					const currentPage = new ButtonBuilder()
+						.setCustomId('currentPage')
+						.setLabel(`${currentPageNumber + 1}/${mapEmbeds.length}`)
+						.setStyle(ButtonStyle.Secondary)
+						.setDisabled(true);
+
+					const forwardPage = new ButtonBuilder()
+						.setCustomId('forwardPage')
+						.setLabel('NEXT PAGE')
+						.setStyle(ButtonStyle.Primary);
+
+					const row = new ActionRowBuilder().addComponents(
+						backPage,
+						currentPage,
+						forwardPage,
+					);
+
+					const reply = await interaction.editReply({
+						content: '',
+						embeds: [mapEmbeds[0]],
+						components: [row],
+					});
+
+					const filter = (i) => i.user.id === interaction.user.id;
+
+					const collector = reply.createMessageComponentCollector({
+						componentType: ComponentType.Button,
+						filter,
+						idle: 60_000,
+					});
+
+					collector.on('collect', async (interaction) => {
+						switch (interaction.customId) {
+							case 'backPage':
+								if (currentPageNumber === 0) {
+									currentPageNumber = mapEmbeds.length - 1;
+								} else {
+									currentPageNumber--;
+								}
+
+								await row.components[1].setLabel(
+									`${currentPageNumber + 1}/${mapEmbeds.length}`,
+								);
+
+								await interaction.update({
+									content: '',
+									embeds: [mapEmbeds[currentPageNumber]],
+									components: [row],
+								});
+
+								break;
+							case 'forwardPage':
+								if (currentPageNumber === mapEmbeds.length - 1) {
+									currentPageNumber = 0;
+								} else {
+									currentPageNumber++;
+								}
+
+								await row.components[1].setLabel(
+									`${currentPageNumber + 1}/${mapEmbeds.length}`,
+								);
+
+								await interaction.update({
+									content: '',
+									embeds: [mapEmbeds[currentPageNumber]],
+									components: [row],
+								});
+
+								break;
+						}
+					});
+
+					collector.on('end', async () => {
+						allRows.forEach((row) => {
+							row.components.forEach((button) => {
+								button.setDisabled(true);
+							});
+						});
+
+						await interaction.editReply({
+							embeds: [page],
+							components: allRows,
+						});
+					});
+				}
 			} else {
 				interaction.editReply(
 					`No results found for ${name}, make sure you are spelling the name correctly.`,
