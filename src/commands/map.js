@@ -195,9 +195,8 @@ module.exports = {
 				let mapEmbeds = [];
 
 				const defaultEmbed = new EmbedBuilder().setTitle(
-					`Search results for ${name}`,
+					`Search results for ${name} (${i} found)`,
 				);
-				// .setFields(mapFields);
 
 				if (mapFields.length > 10) {
 					for (let i = 0; i < mapFields.length; i += 10) {
@@ -304,15 +303,13 @@ module.exports = {
 						});
 
 						collector.on('end', async () => {
-							allRows.forEach((row) => {
-								row.components.forEach((button) => {
-									button.setDisabled(true);
-								});
+							row.components.forEach((button) => {
+								button.setDisabled(true);
 							});
 
 							await interaction.editReply({
 								embeds: [page],
-								components: allRows,
+								components: row,
 							});
 						});
 					}

@@ -162,15 +162,13 @@ module.exports = {
 					});
 
 					collector.on('end', async () => {
-						allRows.forEach((row) => {
-							row.components.forEach((button) => {
-								button.setDisabled(true);
-							});
+						row.components.forEach((button) => {
+							button.setDisabled(true);
 						});
 
 						await interaction.editReply({
 							embeds: [page],
-							components: allRows,
+							components: row,
 						});
 					});
 				}
