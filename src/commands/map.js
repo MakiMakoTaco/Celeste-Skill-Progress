@@ -195,7 +195,7 @@ module.exports = {
 				let mapEmbeds = [];
 
 				const defaultEmbed = new EmbedBuilder().setTitle(
-					`Search results for ${name} (${i} found)`,
+					`Search results for ${name} (${mapFields.length} found)`,
 				);
 
 				if (mapFields.length > 10) {
