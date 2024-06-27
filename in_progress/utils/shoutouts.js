@@ -8,50 +8,175 @@ const {
 	getUsersData,
 } = require('../../utils/checkSheets');
 
+/**
+ * Get/fetch the error channel on error, not needed to store
+ */
+// const errorChannel =
+// 	client.channels.cache.get(process.env.ERROR_CHANNEL_ID) ??
+// 	(await client.channels.fetch(process.env.ERROR_CHANNEL_ID));
+
+/**
+ * Needed changes:
+ *
+ * - bulk update to Mongo
+ * - Make default user a global variable:
+ *    so that if there's changes to total clears in the first db user compared to the sheets,
+ *    we update everyone, whether they have a shoutout/roles to add or not
+ */
+
+async function shoutouts() {
+	/**
+	 * Foreach guild, check if shoutouts are enabled and run function
+	 * Maybe check once user is being shouted out
+	 *  */
+
+	/**
+	 * Grab the userIds or sheet names of the people to do the shoutouts as an array, find the servers who want them to be shouted out and run the roles (if needed) and shoutout
+	 */
+
+	/**
+	 * Check enabled status when ready to do the shoutouts, one run of everything and then checks.
+	 * Maybe change to Shoutouts.find({ enabled: true }) to see if there's at least one enabled, otherwise leave it
+	 *
+	 * Is likely enabled in CSR server so is just a fail-safe, as is uncommon maybe just the when shoutout part
+	 */
+
+	// shoutout = await Shoutout.findOne({ serverId: guildId });
+	const shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
+
+	if (!shoutout.enabled) {
+		setTimeout(() => {
+			shoutouts();
+		}, 1_000 * 60 * 60);
+	} else {
+		// let timeoutMinutes;
+		let getRoleNumbers;
+
+		let updateRoleNumbers = true;
+
+		let roleNumbers = [];
+
+		// const guildId = '927897210471989270'; // CSR server
+		const guildId = '773124995684761630'; // test server
+
+		// timeoutMinutes = 2;
+
+		if (updateRoleNumbers || !getRoleNumbers) {
+			// Get clear number milestones from roles every 24 hours
+			roleNumbers = []; // Reset role numbers
+
+			guild.roles.fetch().then((roles) => {
+				roles.forEach((role) => {
+					const match = role.name.match(/(\d+) clears/);
+					if (match) {
+						roleNumbers.push([parseInt(match[1]), role.name]);
+					}
+				});
+			});
+
+			updateRoleNumbers = false;
+
+			setTimeout(() => {
+				updateRoleNumbers = true;
+			}, 24 * 60 * 60 * 1000);
+		}
+		// guildMap.set(guildId, { roleNumbers: [] })
+
+		const guild = client.guilds.cache.get(guildId); // Get CSR server from cache
+
+		// Extract the number from the role name using regular expressions
+	}
+}
+
 module.exports = async (client) => {
 	const errorChannel = await client.channels.fetch(
 		process.env.ERROR_CHANNEL_ID,
 	);
 
-	const guildId = '927897210471989270'; // CSR server
-	// const guildId = '773124995684761630'; // test server
+	// const guildId = '927897210471989270'; // CSR server
+	const guildId = '773124995684761630'; // test server
 
-	let shoutout = await Shoutout.findOne({ serverId: guildId }); // CSR server
+	// let shoutout = await Shoutout.findOne({ serverId: guildId }); // CSR server
 	// let shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
 
-	const guild = await client.guilds.fetch(guildId); // Fetch CSR server
-	const guildRoles = await guild.roles.fetch(); // Fetch all roles in the server
-	let members = await guild.members.fetch(); // Fetch all members in the server
+	const guild = client.guilds.cache.get(guildId); // Get CSR server from cache
+
+	// const guildRoles = await guild.roles.fetch(); // Fetch all roles in the server
+	let getRoleByName = async (name) => {
+		let role = guild.roles.cache.find((r) => r.name === name);
+		if (!role) {
+			const allRoles = await guild.roles.fetch();
+			role = allRoles.find((r) => r.name === name);
+		}
+		return role;
+	}; // Get/fetch roles once needed
+
+	// let members = await guild.members.fetch(); // Fetch all members in the server
+	// Function to get member
+	let getMemberById = async (id) => {
+		let member = guild.members.cache.get(id);
+		if (!member) {
+			member = await guild.members.fetch(id);
+		}
+		return member;
+	}; // Get/fetch member once needed
 
 	// Extract the number from the role name using regular expressions
 	const roleNumbers = [];
-	guildRoles.forEach((role) => {
-		const match = role.name.match(/(\d+) clears/);
-		if (match) {
-			roleNumbers.push([parseInt(match[1]), role.name]);
-		}
-	});
 
-	const shoutoutChannel = await guild.channels.fetch('927897791932542986'); // CSR shoutout channel
-	// const shoutoutChannel = await guild.channels.fetch('1224754665363738645'); // test channel
+	// Get clear number milestones from roles every 24 hours
+	setInterval(() => {
+		guild.roles.fetch().then((roles) => {
+			roles.forEach((role) => {
+				const match = role.name.match(/(\d+) clears/);
+				if (match) {
+					roleNumbers.push([parseInt(match[1]), role.name]);
+				}
+			});
+		});
+	}, 24 * 60 * 60 * 1000);
 
-	if (shoutout.enabled) {
-		shoutouts();
-	}
+	// const shoutoutChannel = await guild.channels.fetch('927897791932542986'); // CSR shoutout channel
+	const shoutoutChannel =
+		guild.channels.cache.get('1224754665363738645') ??
+		(await guild.channels.fetch('1224754665363738645')); // test channel
+
+	// if (shoutout.enabled) {
+	shoutouts();
+	// } else {
+	// 	// Call function to check if shoutouts are enabled (every hour(?))
+	// 	return;
+	// }
 
 	async function shoutouts() {
+		// shoutout = await Shoutout.findOne({ serverId: guildId });
+		const shoutout = await Shoutout.findOne({ serverId: '927897210471989270' });
+
+		if (!shoutout.enabled) {
+			// Call function to check if shoutouts are enabled (every hour(?))
+			return;
+		}
+
 		try {
+			// Get data from Google Sheets and check forms in parallel
+			const [file, formValues] = await Promise.all([getFile(), checkForms()]);
+
 			// Get data from Google Sheets
-			const file = await getFile();
+			// const file = await getFile();
 			const sheet = await getSheetValues(file[1]);
 
+			/**
+			 * Make default user a global variable
+			 * so that if there's changes to total clears in the first db user compared to the sheets,
+			 * we update everyone, whether they have a shoutout/roles to add or not
+			 */
 			// Create a default user object
 			const defaultUser = await getDefaultUserData(file[0], sheet);
 
 			// Get data for all users
 			const usersData = await getUsersData(file[0], sheet, defaultUser);
 
-			const formValues = await checkForms();
+			// const formValues = await checkForms();
 
 			// Comparing changes
 			try {
@@ -78,7 +203,7 @@ module.exports = async (client) => {
 								user.roles.push(...existingUser.roles);
 							}
 
-							break;
+							return;
 						}
 					}
 
@@ -186,7 +311,7 @@ module.exports = async (client) => {
 
 							// Give the user the new roles
 							try {
-								let [member, username] = await getMember(
+								let member = await getMember(
 									formValues,
 									members,
 									user.username,
@@ -214,30 +339,20 @@ module.exports = async (client) => {
 												}
 											} catch (error) {
 												console.log(error);
-												await errorChannel.send(
+												errorChannel.send(
 													`Error adding ${role} to ${user.username}: ${error}`,
 												);
-
-												const tart = await client.users.fetch(
-													'596456704720502797',
-												);
-												await tart.send(`Could not add ${role} to ${username}`);
 											}
 										}
 									}
 								} else {
-									await errorChannel.send(
-										`Error getting member ${user.username} for roles (put ${username} as the username)`,
-									);
-
-									const tart = await client.users.fetch('596456704720502797');
-									await tart.send(
-										`Could not find ${username} in the server (sheet name: ${user.username})`,
+									errorChannel.send(
+										`Error getting member ${user.username} for roles`,
 									);
 								}
 							} catch (error) {
 								console.log(error);
-								await errorChannel.send(
+								errorChannel.send(
 									`Error adding roles to ${user.username}: ${error}`,
 								);
 							}
@@ -278,12 +393,7 @@ module.exports = async (client) => {
 		} catch (error) {
 			console.error(error);
 		}
-
-		setTimeout(async () => {
-			shoutout = await Shoutout.findOne({ serverId: guildId });
-			if (shoutout.enabled) {
-				shoutouts();
-			}
-		}, 600_000);
 	}
 };
+
+module.exports = { shoutouts };

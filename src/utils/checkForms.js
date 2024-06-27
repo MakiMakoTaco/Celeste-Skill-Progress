@@ -48,7 +48,7 @@ async function getMember(values, members, sheetName) {
 		const memberInfo = values.find((username) => username[0] === sheetName);
 		const username = memberInfo[1].toLowerCase();
 
-		if (!memberInfo) return null;
+		if (!memberInfo) return [null, null];
 
 		let member = members.find((member) => member.user.username === username);
 
@@ -56,7 +56,7 @@ async function getMember(values, members, sheetName) {
 			member = members.find((member) => member.nickname === memberInfo[1]);
 		}
 
-		return member;
+		return [member, memberInfo[1]];
 	} catch (error) {
 		console.error(error);
 	}

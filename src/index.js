@@ -23,7 +23,7 @@ async function logErrorToFile(error) {
 	}
 
 	const currentTime = new Date().toISOString();
-	const errorMessage = `${currentTime}: ${error}\n`;
+	const errorMessage = `${currentTime}: ` + error + '\n';
 
 	fs.appendFile('error.log', errorMessage, (err) => {
 		if (err) {
