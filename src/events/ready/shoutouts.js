@@ -199,7 +199,7 @@ module.exports = async (client) => {
 								}
 
 								if (member) {
-									const memberRoles = await member.roles.cache;
+									const memberRoles = member.roles.cache ?? [];
 									for (const role of user.roles) {
 										if (memberRoles.find((r) => r.name === role)) {
 											continue;
