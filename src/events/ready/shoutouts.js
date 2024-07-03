@@ -195,7 +195,11 @@ module.exports = async (client) => {
 								if (!member) {
 									members = await guild.members.fetch();
 
-									member = await getMember(formValues, members, user.username);
+									[member, username] = await getMember(
+										formValues,
+										members,
+										user.username,
+									);
 								}
 
 								if (member) {
