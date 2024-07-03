@@ -43,22 +43,56 @@ async function getSubmissionStatus() {
 	return [submissionValues, acceptanceValues];
 }
 
-async function getMember(values, members, sheetName) {
+async function getMember(values, guild, sheetName) {
 	try {
 		const memberInfo = values.find((username) => username[0] === sheetName);
-		const username = memberInfo[1].toLowerCase();
-
 		if (!memberInfo) return [null, null];
 
-		let member = members.find((member) => member.user.username === username);
+		const username = memberInfo[1].toLowerCase();
 
+		// Attempt to find the member in the cache by username or displayName
+		let member = guild.members.cache.find(
+			(member) =>
+				member.user.username.toLowerCase() === username ||
+				member.displayName.toLowerCase() === username,
+		);
+
+		console.log(member, username);
+
+		if (member) {
+			const exactMember = fetchedMembers.find(
+				(member) =>
+					member.user.username.toLowerCase() === username ||
+					member.displayName.toLowerCase() === username,
+			);
+
+			member = exactMember || null;
+		}
+
+		// If not found in cache, fetch from the API
 		if (!member) {
-			member = members.find((member) => member.nickname === memberInfo[1]);
+			try {
+				const fetchedMembers = await guild.members.fetch({ query: username });
+				const exactMember = fetchedMembers.find(
+					(member) =>
+						member.user.username.toLowerCase() === username ||
+						member.displayName.toLowerCase() === username,
+				);
+
+				member = exactMember || null;
+				if (!member) {
+					console.log('Member not found');
+				}
+			} catch (error) {
+				console.error(error);
+				member = null;
+			}
 		}
 
 		return [member, memberInfo[1]];
 	} catch (error) {
 		console.error(error);
+		return [null, null];
 	}
 }
 
