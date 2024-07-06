@@ -283,8 +283,8 @@ async function shoutouts(client) {
 								for (let i = 0; i < sortedRoles.length; i++) {
 									editedMessage = `**Congrats to our newest ${
 										sortedRoles[i]?.length > 0
-											? `${sortedRoles[i][0].name} (and ${sortedRoles[i][1].name})`
-											: `${sortedRoles[i].name}`
+											? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
+											: `${sortedRoles[i]}`
 									} rank, ${user.username}!**`;
 									
 										const message = await shoutoutChannel.send('Congrats to ');
