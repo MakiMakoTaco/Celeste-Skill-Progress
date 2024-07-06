@@ -142,7 +142,7 @@ async function shoutouts(client) {
 
 		setTimeout(() => {
 			updateRoleNumbers = true;
-		}, 24 * 60 * 60 * 1000);
+		}, 1000 * 60 * 60 * 24);
 	}
 
 	try {
@@ -286,12 +286,10 @@ async function shoutouts(client) {
 											? `${sortedRoles[i][0].name} (and ${sortedRoles[i][1].name})`
 											: `${sortedRoles[i].name}`
 									} rank, ${user.username}!**`;
-
-									if (user.username === 'HyruleMaki') {
+									
 										const message = await shoutoutChannel.send('Congrats to ');
 
 										await message.edit(editedMessage);
-									}
 								}
 							}
 
@@ -362,11 +360,17 @@ async function shoutouts(client) {
 			});
 
 			// Update all users in database if major changes
+
+   setTimeout(() => {
+			  shoutouts(client);
+		 }, 1000 * 60 * 60 * 15);
 		} catch (error) {
 			console.error(error);
+			errorChannel.send(`Error comparing user data: ${error}`);
 		}
 	} catch (error) {
 		console.error(error);
+		errorChannel.send(`Error in shoutout file: ${error}`);
 	}
 }
 
