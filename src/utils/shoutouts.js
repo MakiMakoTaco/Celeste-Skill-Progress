@@ -363,7 +363,7 @@ async function shoutouts(client) {
 
    setTimeout(() => {
 			  shoutouts(client);
-		 }, 1000 * 60 * 60 * 15);
+		 }, 1000 * 60 * 15);
 		} catch (error) {
 			console.error(error);
 			errorChannel.send(`Error comparing user data: ${error}`);
