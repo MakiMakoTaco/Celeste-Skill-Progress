@@ -286,10 +286,10 @@ async function shoutouts(client) {
 											? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
 											: `${sortedRoles[i]}`
 									} rank, ${user.username}!**`;
-									
-										const message = await shoutoutChannel.send('Congrats to ');
 
-										await message.edit(editedMessage);
+									const message = await shoutoutChannel.send('Congrats to ');
+
+									await message.edit(editedMessage);
 								}
 							}
 
@@ -313,11 +313,11 @@ async function shoutouts(client) {
 									errorChannel.send(
 										`Error getting member ${user.username} for roles. Inputted username: ${username}`,
 									);
-									
+
 									const tart = await client.users.fetch('596456704720502797');
-			      await tart.send(
-				       `Error getting a member for roles: Inputted username: ${username} (from sheet name: ${user.username})`,
-			      );
+									await tart.send(
+										`Error getting a member for roles: Inputted username: ${username} (from sheet name: ${user.username})`,
+									);
 								}
 							} catch (error) {
 								console.log(error);
@@ -366,9 +366,9 @@ async function shoutouts(client) {
 
 			// Update all users in database if major changes
 
-   setTimeout(() => {
-			  shoutouts(client);
-		 }, 1000 * 60 * 15);
+			setTimeout(() => {
+				shoutouts(client);
+			}, 1000 * 60 * 60);
 		} catch (error) {
 			console.error(error);
 			errorChannel.send(`Error comparing user data: ${error}`);
