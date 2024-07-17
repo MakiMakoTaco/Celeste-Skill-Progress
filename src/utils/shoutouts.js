@@ -311,12 +311,18 @@ async function shoutouts(client) {
 									);
 								} else {
 									errorChannel.send(
-										`Error getting member ${user.username} for roles. Inputted username: ${username}`,
+										`Error getting member ${
+											user.username
+										} for roles. Inputted username: ${username}\nRoles: ${newRoles.join(
+											', ',
+										)}`,
 									);
 
 									const tart = await client.users.fetch('596456704720502797');
 									await tart.send(
-										`Error getting a member for roles: Inputted username: ${username} (from sheet name: ${user.username})`,
+										`Error getting a member for roles: Inputted username: ${username} (from sheet name: ${
+											user.username
+										})\nRoles: ${newRoles.join(', ')}`,
 									);
 								}
 							} catch (error) {

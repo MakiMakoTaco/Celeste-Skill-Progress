@@ -48,48 +48,44 @@ async function getMember(values, guild, sheetName) {
 		const memberInfo = values.find((username) => username[0] === sheetName);
 		if (!memberInfo) return [null, null];
 
-		const username = memberInfo[1].toLowerCase();
+		const username = memberInfo[1];
 
 		// Attempt to find the member in the cache by username or displayName
 		let member = guild.members.cache.find(
 			(member) =>
-				member.user.username.toLowerCase() === username ||
-				member.displayName.toLowerCase() === username,
+				member.user.username.toLowerCase() === username.toLowerCase() ||
+				member.displayName === username,
 		);
 
-		console.log(member, username);
+		// console.log(member, username);
 
-		if (member) {
-			const exactMember = fetchedMembers.find(
-				(member) =>
-					member.user.username.toLowerCase() === username ||
-					member.displayName.toLowerCase() === username,
-			);
+		// if (member) {
+		// 	const exactMember = fetchedMembers.find(
+		// 		(member) =>
+		// 			member.user.username.toLowerCase() === username ||
+		// 			member.displayName.toLowerCase() === username,
+		// 	);
 
-			member = exactMember || null;
-		}
+		// 	member = exactMember || null;
+		// }
 
 		// If not found in cache, fetch from the API
 		if (!member) {
 			try {
 				const fetchedMembers = await guild.members.fetch({ query: username });
-				const exactMember = fetchedMembers.find(
-					(member) =>
-						member.user.username.toLowerCase() === username ||
-						member.displayName.toLowerCase() === username,
-				);
-
-				member = exactMember || null;
-				if (!member) {
-					console.log('Member not found');
-				}
+				member =
+					fetchedMembers.find(
+						(member) =>
+							member.user.username.toLowerCase() === username.toLowerCase() ||
+							member.displayName === username,
+					) || null;
 			} catch (error) {
 				console.error(error);
 				member = null;
 			}
 		}
 
-		return [member, memberInfo[1]];
+		return [member, username];
 	} catch (error) {
 		console.error(error);
 		return [null, null];
