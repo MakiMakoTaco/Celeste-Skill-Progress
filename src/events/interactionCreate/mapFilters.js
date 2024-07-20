@@ -46,6 +46,7 @@ module.exports = (interaction) => {
 		{ name: 'Catstare: Exodus', value: '3, exodus' },
 
 		{ name: 'DLC: DLC 7', value: '4, dlc 7' },
+		{ name: 'DLC: DLC 8', value: '4, dlc 8' },
 
 		{ name: 'Archived: DLC 1', value: '5, dlc 1' },
 		{ name: 'Archived: DLC 2', value: '5, dlc 2' },

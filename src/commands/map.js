@@ -68,6 +68,9 @@ module.exports = {
 							{ name: 'All', value: 'all' },
 						),
 				)
+				.addBooleanOption((DLC) =>
+					DLC.setName('dlc').setDescription('Include DLC maps?'),
+				)
 				.addStringOption((archived) =>
 					archived
 						.setName('archived')
@@ -325,6 +328,7 @@ module.exports = {
 		} else if (subcommand === 'random') {
 			const uncleared = interaction.options?.getString('uncleared') || 'all';
 			const filter = interaction.options?.getString('filters') || 'none';
+			const dlc = interaction.options?.getBoolean('dlc') || true;
 			const archived = interaction.options?.getString('archived') || 'false';
 			const randomAmount = interaction.options?.getInteger('amount') || 1;
 
@@ -355,9 +359,16 @@ module.exports = {
 
 			const sheetResults = sheetResultsArray[0] || [];
 
+			const dlcSheets = sheetResults.filter((sheet) =>
+				/^DLC \d+$/.test(sheet[0].category),
+			);
+
 			if (sheetResults.length > 0) {
-				const filteredSheetsLength =
-					archived === 'true' ? sheetResults.length : sheetResults.length - 1;
+				const filteredSheetsLength = !dlc
+					? sheetResults.length - dlcSheets.length
+					: archived === 'true'
+					? sheetResults.length
+					: sheetResults.length - 1;
 				let filteredMaps = [];
 				let sheetIndex = -1;
 
