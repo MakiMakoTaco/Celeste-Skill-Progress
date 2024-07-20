@@ -68,8 +68,8 @@ module.exports = {
 							{ name: 'All', value: 'all' },
 						),
 				)
-				.addBooleanOption((DLC) =>
-					DLC.setName('dlc').setDescription('Include DLC maps?'),
+				.addBooleanOption((dlc) =>
+					dlc.setName('dlc').setDescription('Include DLC maps?'),
 				)
 				.addStringOption((archived) =>
 					archived
@@ -328,7 +328,7 @@ module.exports = {
 		} else if (subcommand === 'random') {
 			const uncleared = interaction.options?.getString('uncleared') || 'all';
 			const filter = interaction.options?.getString('filters') || 'none';
-			const dlc = interaction.options?.getBoolean('dlc') || true;
+			const dlc = interaction.options?.getBoolean('dlc') ?? true;
 			const archived = interaction.options?.getString('archived') || 'false';
 			const randomAmount = interaction.options?.getInteger('amount') || 1;
 
@@ -364,6 +364,8 @@ module.exports = {
 			);
 
 			if (sheetResults.length > 0) {
+				console.log(dlc, dlcSheets.length);
+
 				const filteredSheetsLength = !dlc
 					? sheetResults.length - dlcSheets.length
 					: archived === 'true'
@@ -371,6 +373,8 @@ module.exports = {
 					: sheetResults.length - 1;
 				let filteredMaps = [];
 				let sheetIndex = -1;
+
+				console.log(filteredSheetsLength);
 
 				if (filter !== 'none') {
 					const filterArray = filter.split(', ');
@@ -400,8 +404,11 @@ module.exports = {
 					if (archived === 'true') {
 						filteredMaps = sheetResults.flat();
 					} else {
-						const resultsWithoutLast = sheetResults.slice(0, -1);
-						filteredMaps = resultsWithoutLast.flat();
+						const resultsWithCustomLength = sheetResults.slice(
+							0,
+							filteredSheetsLength,
+						);
+						filteredMaps = resultsWithCustomLength.flat();
 					}
 				}
 
