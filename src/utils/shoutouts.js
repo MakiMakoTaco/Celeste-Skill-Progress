@@ -279,17 +279,29 @@ async function shoutouts(client) {
 							sortedRoles.reverse();
 
 							if (sortedRoles.length !== 0) {
-								let editedMessage = '';
 								for (let i = 0; i < sortedRoles.length; i++) {
-									editedMessage = `**Congrats to our newest ${
-										sortedRoles[i]?.length > 0
-											? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
-											: `${sortedRoles[i]}`
-									} rank, ${user.username}!**`;
+									try {
+										const editedMessage = `**Congrats to our newest ${
+											sortedRoles[i]?.length > 0
+												? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
+												: `${sortedRoles[i]}`
+										} rank, ${user.username}!**`;
 
-									const message = await shoutoutChannel.send('Congrats to ');
+										const message = await shoutoutChannel.send(
+											`**Congrats to our newest ${
+												sortedRoles[i]?.length > 0
+													? `${sortedRoles[i][0].name} (and ${sortedRoles[i][1].name})`
+													: `${sortedRoles[i].name}`
+											} rank, ${user.username}!**`,
+										);
 
-									await message.edit(editedMessage);
+										await message.edit(editedMessage);
+									} catch (error) {
+										console.error(error);
+										errorChannel.send(
+											`Error sending/editing shoutout for ${user.username}: ${error}`,
+										);
+									}
 								}
 							}
 
@@ -345,6 +357,13 @@ async function shoutouts(client) {
 								} with the ${newRoles.join(
 									', ',
 								)} roles in shoutouts channel: ${error}`,
+							);
+
+							const tart = await client.users.fetch('596456704720502797');
+							await tart.send(
+								`Error shouting out and adding roles to ${
+									user.username
+								} with the ${newRoles.join(', ')} roles`,
 							);
 						}
 					}
