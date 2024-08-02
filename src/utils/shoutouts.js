@@ -299,11 +299,11 @@ async function shoutouts(client) {
 									} catch (error) {
 										console.error(error);
 										errorChannel.send(
-											`Error sending/editing shoutout for ${user.username}: ${error}`,
+											`Error sending/editing shoutout for ${user.username}\nRoles: ${newRoles.join(', ')}\nError: ${error}`,
 										);
 										
 										const tart = await client.users.fetch('596456704720502797');
-										await tart.send(`Error sending/editing shoutout for ${user.username}`);
+										await tart.send(`Error sending/editing shoutout for ${user.username}\nRoles: ${newRoles.join(', ')}`);
 									}
 								}
 							}
@@ -347,7 +347,7 @@ async function shoutouts(client) {
 								);
 								
 								const tart = await client.users.fetch('596456704720502797');
-								await tart.send(`Error adding roles to ${user.username}`);
+								await tart.send(`Error adding roles to ${user.username}\nRoles: ${newRoles.join(', ')}`)
 							}
 						} catch (error) {
 							console.log(
