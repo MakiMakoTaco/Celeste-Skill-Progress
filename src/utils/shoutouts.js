@@ -301,6 +301,9 @@ async function shoutouts(client) {
 										errorChannel.send(
 											`Error sending/editing shoutout for ${user.username}: ${error}`,
 										);
+										
+										const tart = await client.users.fetch('596456704720502797');
+										await tart.send(`Error sending/editing shoutout for ${user.username}`);
 									}
 								}
 							}
@@ -342,6 +345,9 @@ async function shoutouts(client) {
 								errorChannel.send(
 									`Error adding roles to ${user.username}: ${error}`,
 								);
+								
+								const tart = await client.users.fetch('596456704720502797');
+								await tart.send(`Error adding roles to ${user.username}`);
 							}
 						} catch (error) {
 							console.log(
@@ -385,7 +391,7 @@ async function shoutouts(client) {
 					);
 				} catch (error) {
 					console.error('Error processing user data:', error);
-					errorChannel.send(`Error processing user data: ${error}`);
+					errorChannel.send(`Error processing user data for ${user}: ${error}`);
 				}
 			});
 
