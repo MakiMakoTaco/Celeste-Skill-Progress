@@ -7,7 +7,7 @@ const { google } = require('googleapis');
 // Create Google Sheets API client
 const sheetsAPI = google.sheets({
 	version: 'v4',
-	auth: process.env.SHEETS_TOKEN,
+	auth: process.env.GOOGLE_API_KEY,
 });
 
 // Define the spreadsheet ID
