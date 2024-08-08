@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const getVideos = require('../../utils/checkYouTube');
+const getVideos = require('../utils/checkYouTube');
 const he = require('he');
 
 module.exports = {
@@ -44,9 +44,5 @@ module.exports = {
 			content: '',
 			embeds: [videosEmbed],
 		});
-	},
-
-	options: {
-		devOnly: true,
 	},
 };
