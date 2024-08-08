@@ -33,9 +33,9 @@ module.exports = {
 				videoResults.items.slice(0, 10).map((video, index) => {
 					return {
 						name: `${index + 1}. ${he.decode(video.snippet.title)}`,
-						value: `**Description**: ${he.decode(
-							video.snippet.description,
-						)}\n**Link**: https://www.youtube.com/watch?v=${video.id.videoId}`,
+						value: `**Link**: https://www.youtube.com/watch?v=${
+							video.id.videoId
+						}\n**Description**: ${he.decode(video.snippet.description)}`,
 					};
 				}),
 			);
