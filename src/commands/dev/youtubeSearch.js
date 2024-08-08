@@ -21,13 +21,21 @@ module.exports = {
 		const videoResults = await getVideos(query);
 
 		const videosEmbed = new EmbedBuilder()
-			.setTitle(`Video results for ${query}`)
-			.setDescription(`Found ${videoResults.pageInfo.totalResults} results`)
+			.setTitle(`\nVideo results for ${query}`)
+			// .setDescription(
+			// 	`Found ${
+			// 		videoResults.pageInfo.totalResults >= 1000000
+			// 			? `over ${videoResults.pageInfo.totalResults}`
+			// 			: videoResults.pageInfo.totalResults
+			// 	} results`,
+			// )
 			.setFields(
 				videoResults.items.slice(0, 10).map((video, index) => {
 					return {
 						name: `${index + 1}. ${he.decode(video.snippet.title)}`,
-						value: `https://www.youtube.com/watch?v=${video.id.videoId}`,
+						value: `**Description**: ${he.decode(
+							video.snippet.description,
+						)}\n**Link**: https://www.youtube.com/watch?v=${video.id.videoId}`,
 					};
 				}),
 			);
