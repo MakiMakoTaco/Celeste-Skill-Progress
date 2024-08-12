@@ -8,6 +8,19 @@ const {
 	getUsersData,
 } = require('./checkSheets');
 
+// Utility function to retry a promise-returning function
+async function retry(fn, retries = 3, delay = 1000) {
+	for (let i = 0; i < retries; i++) {
+		try {
+			return await fn();
+		} catch (error) {
+			if (i === retries - 1) throw error;
+			console.log(`Retrying... (${i + 1}/${retries})`);
+			await new Promise((res) => setTimeout(res, delay));
+		}
+	}
+}
+
 // Change so I fetch guild roles before entering/check if they're already fetched
 // I can map the guildRoles when I fetch the number milestones
 async function addRolesToMember(guildRoles, member, userRoles, errorChannel) {
@@ -287,23 +300,31 @@ async function shoutouts(client) {
 												: `${sortedRoles[i]}`
 										} rank, ${user.username}!**`;
 
-										const message = await shoutoutChannel.send(
-											`**Congrats to our newest ${
-												sortedRoles[i]?.length > 0
-													? `${sortedRoles[i][0].name} (and ${sortedRoles[i][1].name})`
-													: `${sortedRoles[i].name}`
-											} rank, ${user.username}!**`,
+										const message = await retry(() =>
+											shoutoutChannel.send(
+												`**Congrats to our newest ${
+													sortedRoles[i]?.length > 0
+														? `${sortedRoles[i][0].name} (and ${sortedRoles[i][1].name})`
+														: `${sortedRoles[i].name}`
+												} rank, ${user.username}!**`,
+											),
 										);
 
-										await message.edit(editedMessage);
+										await retry(() => message.edit(editedMessage));
 									} catch (error) {
 										console.error(error);
 										errorChannel.send(
-											`Error sending/editing shoutout for ${user.username}\nRoles: ${newRoles.join(', ')}\nError: ${error}`,
+											`Error sending/editing shoutout for ${
+												user.username
+											}\nRoles: ${newRoles.join(', ')}\nError: ${error}`,
 										);
-										
+
 										const tart = await client.users.fetch('596456704720502797');
-										await tart.send(`Error sending/editing shoutout for ${user.username}\nRoles: ${newRoles.join(', ')}`);
+										await tart.send(
+											`Error sending/editing shoutout for ${
+												user.username
+											}\nRoles: ${newRoles.join(', ')}`,
+										);
 									}
 								}
 							}
@@ -311,18 +332,18 @@ async function shoutouts(client) {
 							// Give the user the new roles
 							try {
 								// Finding user and adding roles
-								let [member, username] = await getMember(
-									formValues,
-									guild,
-									user.username,
+								let [member, username] = await retry(() =>
+									getMember(formValues, guild, user.username),
 								);
 
 								if (member) {
-									await addRolesToMember(
-										guildRolesMap,
-										member,
-										user.roles,
-										errorChannel,
+									await retry(() =>
+										addRolesToMember(
+											guildRolesMap,
+											member,
+											user.roles,
+											errorChannel,
+										),
 									);
 								} else {
 									errorChannel.send(
@@ -345,9 +366,13 @@ async function shoutouts(client) {
 								errorChannel.send(
 									`Error adding roles to ${user.username}: ${error}`,
 								);
-								
+
 								const tart = await client.users.fetch('596456704720502797');
-								await tart.send(`Error adding roles to ${user.username}\nRoles: ${newRoles.join(', ')}`)
+								await tart.send(
+									`Error adding roles to ${
+										user.username
+									}\nRoles: ${newRoles.join(', ')}`,
+								);
 							}
 						} catch (error) {
 							console.log(
@@ -387,6 +412,8 @@ async function shoutouts(client) {
 						user,
 						{
 							upsert: true,
+							retryWrites: true,
+							maxTimeMS: 30_000,
 						},
 					);
 				} catch (error) {
@@ -402,11 +429,15 @@ async function shoutouts(client) {
 			}, 1000 * 60 * 60);
 		} catch (error) {
 			console.error(error);
-			errorChannel.send(`Error comparing user data: ${error}`);
+			errorChannel.send(
+				`Stopped running shoutouts until next reload\n\nError comparing user data: ${error}`,
+			);
 		}
 	} catch (error) {
 		console.error(error);
-		errorChannel.send(`Error in shoutout file: ${error}`);
+		errorChannel.send(
+			`Stopped running shoutouts until next reload\n\nError in shoutout file: ${error}`,
+		);
 	}
 }
 
