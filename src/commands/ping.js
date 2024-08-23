@@ -4,14 +4,19 @@ module.exports = {
 	data: new SlashCommandBuilder().setName('ping').setDescription('Pong!'),
 
 	run: async ({ interaction, client }) => {
-		await interaction.deferReply();
+		const sent = await interaction.reply({
+			content: 'Pinging...',
+			fetchReply: true,
+		});
 
-		if (client.ws.ping != -1) {
-			interaction.editReply(`Pong! ${client.ws.ping}ms`);
-		} else {
-			interaction.editReply(
-				"There was an error getting the bot's ping, please try again in a bit",
-			);
-		}
+		interaction.editReply(
+			`Roundtrip latency: ${
+				sent.createdTimestamp - interaction.createdTimestamp
+			}ms\n${
+				client.ws.ping != -1
+					? `Websocket heartbeat: ${client.ws.ping}ms`
+					: 'Websocket heartbeat currently unavailable'
+			}`,
+		);
 	},
 };
