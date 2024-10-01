@@ -1,5 +1,15 @@
-archived/
-node_modules
-error.log
-csrCredentials.json
+# Secrets
 .env
+csrCredentials.json
+
+# Website stuff
+maps.json
+
+# node_modules
+node_modules
+
+# Logs
+*.log
+
+# Extra
+archived/
