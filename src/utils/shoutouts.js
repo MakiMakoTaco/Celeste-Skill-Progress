@@ -173,267 +173,278 @@ async function shoutouts(client) {
 		// Get data for all users
 		const usersData = await getUsersData(file[0], sheet, defaultUser);
 
-		// Comparing changes
-		try {
-			usersData.forEach(async (user) => {
-				try {
-					let matchingUser = defaultUser;
-					let matchSheet = '';
-					let matchColumn = '';
+		// Comparing changes using a task queue
+		const processUserData = async (user) => {
+			// // Comparing changes
+			// try {
+			// usersData.forEach(async (user) => {
+			try {
+				let matchingUser = defaultUser;
+				let matchSheet = '';
+				let matchColumn = '';
 
-					for (const sheet of user.sheets) {
-						if (sheet.userColumn !== null) {
-							const existingUser = await User.findOne({
-								sheets: {
-									$elemMatch: {
-										name: sheet.name,
-										userColumn: sheet.userColumn,
-									},
+				for (const sheet of user.sheets) {
+					if (sheet.userColumn !== null) {
+						const existingUser = await User.findOne({
+							sheets: {
+								$elemMatch: {
+									name: sheet.name,
+									userColumn: sheet.userColumn,
 								},
-							});
+							},
+						});
 
-							if (existingUser) {
-								matchingUser = existingUser;
-								matchSheet = sheet.name;
-								matchColumn = sheet.userColumn;
-								user.roles.push(...existingUser.roles);
-							}
+						if (existingUser) {
+							matchingUser = existingUser;
+							matchSheet = sheet.name;
+							matchColumn = sheet.userColumn;
+							user.roles.push(...existingUser.roles);
+						}
 
-							break;
+						break;
+					}
+				}
+
+				if (
+					matchingUser.totalClearsIncludingArchived ===
+					user.totalClearsIncludingArchived
+				)
+					return;
+
+				roleNumbers.forEach(([number, roleName]) => {
+					if (user.totalClears >= number) {
+						if (!user.roles.includes(roleName)) {
+							user.roles.push(roleName);
 						}
 					}
+				});
 
-					if (
-						matchingUser.totalClearsIncludingArchived ===
-						user.totalClearsIncludingArchived
-					)
-						return;
+				user.sheets.forEach((sheet) => {
+					if (sheet.name.includes('Archived')) return;
 
-					roleNumbers.forEach(([number, roleName]) => {
-						if (user.totalClears >= number) {
-							if (!user.roles.includes(roleName)) {
-								user.roles.push(roleName);
+					sheet.challenges.forEach((challenge) => {
+						if (challenge.totalClears >= challenge.clearsForRank) {
+							const role = `${challenge.name}${
+								!sheet.name.includes('-Side') ? '' : ` ${sheet.name}`
+							}`;
+
+							if (!user.roles.includes(role)) {
+								user.roles.push(role);
 							}
-						}
-					});
 
-					user.sheets.forEach((sheet) => {
-						if (sheet.name.includes('Archived')) return;
-
-						sheet.challenges.forEach((challenge) => {
-							if (challenge.totalClears >= challenge.clearsForRank) {
-								const role = `${challenge.name}${
+							if (challenge.totalClears === challenge.clearsForPlusRank) {
+								const plusRole = `${challenge.name}+${
 									!sheet.name.includes('-Side') ? '' : ` ${sheet.name}`
 								}`;
 
-								if (!user.roles.includes(role)) {
-									user.roles.push(role);
-								}
-
-								if (challenge.totalClears === challenge.clearsForPlusRank) {
-									const plusRole = `${challenge.name}+${
-										!sheet.name.includes('-Side') ? '' : ` ${sheet.name}`
-									}`;
-
-									if (!user.roles.includes(plusRole)) {
-										user.roles.push(plusRole);
-									}
+								if (!user.roles.includes(plusRole)) {
+									user.roles.push(plusRole);
 								}
 							}
-						});
+						}
 					});
+				});
 
-					// Get the new roles the user should have compared to last saved data
-					const newRoles = user.roles?.filter(
-						(role) => !matchingUser.roles?.includes(role),
-					);
+				// Get the new roles the user should have compared to last saved data
+				const newRoles = user.roles?.filter(
+					(role) => !matchingUser.roles?.includes(role),
+				);
 
-					if (newRoles?.length > 0) {
-						try {
-							const guildRoles = Array.from(guildRolesMap.values());
+				if (newRoles?.length > 0) {
+					try {
+						const guildRoles = Array.from(guildRolesMap.values());
 
-							const rolesToGive = [];
-							const sortedRoles = [];
-							const doneRoles = [];
+						const rolesToGive = [];
+						const sortedRoles = [];
+						const doneRoles = [];
 
-							newRoles.forEach((role) => {
-								rolesToGive.push(guildRoles.find((r) => r.name === role));
-							});
+						newRoles.forEach((role) => {
+							rolesToGive.push(guildRoles.find((r) => r.name === role));
+						});
 
-							rolesToGive.sort((a, b) => b.rawPosition - a.rawPosition);
+						rolesToGive.sort((a, b) => b.rawPosition - a.rawPosition);
 
-							for (const role of rolesToGive) {
-								if (doneRoles.includes(role)) continue;
+						for (const role of rolesToGive) {
+							if (doneRoles.includes(role)) continue;
 
-								if (
-									roleNumbers.find(
-										([number, roleName]) => roleName === role.name,
-									)
-								) {
-									continue;
-								}
-
-								if (
-									role.name.includes('+') &&
-									newRoles.find((r) => r === role.name.replace('+', ''))
-								) {
-									const role2 = guildRoles.find(
-										(r) => r.name === role.name.replace('+', ''),
-									);
-
-									sortedRoles.push([role, role2]);
-									doneRoles.push(role2);
-								} else {
-									sortedRoles.push(role);
-								}
-
-								doneRoles.push(role);
+							if (
+								roleNumbers.find(([number, roleName]) => roleName === role.name)
+							) {
+								continue;
 							}
 
-							sortedRoles.reverse();
-
-							if (sortedRoles.length !== 0) {
-								for (let i = 0; i < sortedRoles.length; i++) {
-									try {
-										const editedMessage = `**Congrats to our newest ${
-											sortedRoles[i]?.length > 0
-												? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
-												: `${sortedRoles[i]}`
-										} rank, ${user.username}!**`;
-
-										const message = await retry(() =>
-											shoutoutChannel.send(
-												`**Congrats to our newest ${
-													sortedRoles[i]?.length > 0
-														? `${sortedRoles[i][0].name} (and ${sortedRoles[i][1].name})`
-														: `${sortedRoles[i].name}`
-												} rank, ${user.username}!**`,
-											),
-										);
-
-										// await retry(() => message.edit(editedMessage));
-									} catch (error) {
-										console.error(error);
-										errorChannel.send(
-											`Error sending/editing shoutout for ${
-												user.username
-											}\nRoles: ${newRoles.join(', ')}\nError: ${error}`,
-										);
-
-										const tart = await client.users.fetch('596456704720502797');
-										await tart.send(
-											`Error sending/editing shoutout for ${
-												user.username
-											}\nRoles: ${newRoles.join(', ')}`,
-										);
-									}
-								}
-							}
-
-							// Give the user the new roles
-							try {
-								// Finding user and adding roles
-								let [member, username] = await retry(() =>
-									getMember(formValues, guild, user.username),
+							if (
+								role.name.includes('+') &&
+								newRoles.find((r) => r === role.name.replace('+', ''))
+							) {
+								const role2 = guildRoles.find(
+									(r) => r.name === role.name.replace('+', ''),
 								);
 
-								if (member) {
-									await retry(() =>
-										addRolesToMember(
-											guildRolesMap,
-											member,
-											user.roles,
-											errorChannel,
+								sortedRoles.push([role, role2]);
+								doneRoles.push(role2);
+							} else {
+								sortedRoles.push(role);
+							}
+
+							doneRoles.push(role);
+						}
+
+						sortedRoles.reverse();
+
+						if (sortedRoles.length !== 0) {
+							for (let i = 0; i < sortedRoles.length; i++) {
+								try {
+									const editedMessage = `**Congrats to our newest ${
+										sortedRoles[i]?.length > 0
+											? `${sortedRoles[i][0]} (and ${sortedRoles[i][1]})`
+											: `${sortedRoles[i]}`
+									} rank, ${user.username}!**`;
+
+									const message = await retry(() =>
+										shoutoutChannel.send(
+											`**Congrats to our newest ${
+												sortedRoles[i]?.length > 0
+													? `${sortedRoles[i][0].name} (and ${sortedRoles[i][1].name})`
+													: `${sortedRoles[i].name}`
+											} rank, ${user.username}!**`,
 										),
 									);
-								} else {
+
+									await retry(() => message.edit(editedMessage));
+								} catch (error) {
+									console.error(error);
 									errorChannel.send(
-										`Error getting member ${
+										`Error sending/editing shoutout for ${
 											user.username
-										} for roles. Inputted username: ${username}\nRoles: ${newRoles.join(
-											', ',
-										)}`,
+										}\nRoles: ${newRoles.join(', ')}\nError: ${error}`,
 									);
 
 									const tart = await client.users.fetch('596456704720502797');
 									await tart.send(
-										`Error getting a member for roles: Inputted username: ${username} (from sheet name: ${
+										`Error sending/editing shoutout for ${
 											user.username
-										})\nRoles: ${newRoles.join(', ')}`,
+										}\nRoles: ${newRoles.join(', ')}`,
 									);
 								}
-							} catch (error) {
-								console.log(error);
+							}
+						}
+
+						// Give the user the new roles
+						try {
+							// Finding user and adding roles
+							let [member, username] = await retry(() =>
+								getMember(formValues, guild, user.username),
+							);
+
+							if (member) {
+								await retry(() =>
+									addRolesToMember(
+										guildRolesMap,
+										member,
+										user.roles,
+										errorChannel,
+									),
+								);
+							} else {
 								errorChannel.send(
-									`Error adding roles to ${user.username}: ${error}`,
+									`Error getting member ${
+										user.username
+									} for roles. Inputted username: ${username}\nRoles: ${newRoles.join(
+										', ',
+									)}`,
 								);
 
 								const tart = await client.users.fetch('596456704720502797');
 								await tart.send(
-									`Error adding roles to ${
+									`Error getting a member for roles: Inputted username: ${username} (from sheet name: ${
 										user.username
-									}\nRoles: ${newRoles.join(', ')}`,
+									})\nRoles: ${newRoles.join(', ')}`,
 								);
 							}
 						} catch (error) {
-							console.log(
-								error,
-								'Username:',
-								user.username,
-								'Roles:',
-								newRoles,
-							);
+							console.log(error);
 							errorChannel.send(
-								`Unknown error shouting out ${
-									user.username
-								} with the ${newRoles.join(
-									', ',
-								)} roles in shoutouts channel: ${error}`,
+								`Error adding roles to ${user.username}: ${error}`,
 							);
 
 							const tart = await client.users.fetch('596456704720502797');
 							await tart.send(
-								`Error shouting out and adding roles to ${
-									user.username
-								} with the ${newRoles.join(', ')} roles`,
+								`Error adding roles to ${user.username}\nRoles: ${newRoles.join(
+									', ',
+								)}`,
 							);
 						}
-					}
+					} catch (error) {
+						console.log(error, 'Username:', user.username, 'Roles:', newRoles);
+						errorChannel.send(
+							`Unknown error shouting out ${
+								user.username
+							} with the ${newRoles.join(
+								', ',
+							)} roles in shoutouts channel: ${error}`,
+						);
 
-					// Update user in database
-					await User.updateOne(
-						{
-							sheets: {
-								$elemMatch: {
-									name: matchSheet,
-									userColumn: matchColumn,
-								},
+						const tart = await client.users.fetch('596456704720502797');
+						await tart.send(
+							`Error shouting out and adding roles to ${
+								user.username
+							} with the ${newRoles.join(', ')} roles`,
+						);
+					}
+				}
+
+				// Update user in database
+				await User.updateOne(
+					{
+						sheets: {
+							$elemMatch: {
+								name: matchSheet,
+								userColumn: matchColumn,
 							},
 						},
-						user,
-						{
-							upsert: true,
-							retryWrites: true,
-							maxTimeMS: 30_000,
-						},
-					);
-				} catch (error) {
-					console.error('Error processing user data:', error);
-					errorChannel.send(`Error processing user data for ${user}: ${error}`);
-				}
-			});
+					},
+					user,
+					{
+						upsert: true,
+						retryWrites: true,
+						maxTimeMS: 30_000,
+					},
+				);
+			} catch (error) {
+				console.error('Error processing user data:', error);
+				errorChannel.send(`Error processing user data for ${user}: ${error}`);
+			}
+		};
 
-			// Update all users in database if major changes
+		// Update all users in database if major changes
 
-			setTimeout(() => {
-				shoutouts(client);
-			}, 1000 * 60 * 60);
-		} catch (error) {
-			console.error(error);
-			errorChannel.send(
-				`Stopped running shoutouts until next reload\n\nError comparing user data: ${error}`,
-			);
-		}
+		// Task queue implementation
+		const taskQueue = async (tasks, concurrency, worker) => {
+			const queue = [...tasks];
+			const workers = Array(concurrency)
+				.fill(null)
+				.map(async () => {
+					while (queue.length > 0) {
+						const task = queue.shift();
+						await worker(task);
+					}
+				});
+			await Promise.all(workers);
+		};
+
+		// Process usersData with concurrency limit of 100
+		await taskQueue(usersData, 100, processUserData);
+
+		setTimeout(() => {
+			shoutouts(client);
+		}, 1000 * 60 * 60);
+		// } catch (error) {
+		// 	console.error(error);
+		// 	errorChannel.send(
+		// 		`Stopped running shoutouts until next reload\n\nError comparing user data: ${error}`,
+		// 	);
+		// }
 	} catch (error) {
 		console.error(error);
 		errorChannel.send(
