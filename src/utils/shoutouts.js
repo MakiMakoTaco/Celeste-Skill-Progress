@@ -110,16 +110,17 @@ async function shoutouts(client) {
 	// let getRoleNumbers;
 
 	const guildId = '927897210471989270'; // CSR server
-	// const guildId = '773124995684761630'; // test server
+	const guildId2 = '773124995684761630'; // test server
 
 	const guild = client.guilds.cache.get(guildId); // Get CSR server from cache
+	const guild2 = client.guilds.cache.get(guildId2); // Get test server from cache
 
-	const shoutoutChannel =
-		guild.channels.cache.get('927897791932542986') ??
-		(await guild.channels.fetch('927897791932542986')); // CSR shoutout channel
 	// const shoutoutChannel =
-	// 	guild.channels.cache.get('1224754665363738645') ??
-	// 	(await guild.channels.fetch('1224754665363738645')); // test channel
+	// 	guild.channels.cache.get('927897791932542986') ??
+	// 	(await guild.channels.fetch('927897791932542986')); // CSR shoutout channel
+	const shoutoutChannel =
+		guild2.channels.cache.get('1224754665363738645') ??
+		(await guild2.channels.fetch('1224754665363738645')); // test channel
 
 	// timeoutMinutes = 2;
 
@@ -310,7 +311,7 @@ async function shoutouts(client) {
 											),
 										);
 
-										await retry(() => message.edit(editedMessage));
+										// await retry(() => message.edit(editedMessage));
 									} catch (error) {
 										console.error(error);
 										errorChannel.send(

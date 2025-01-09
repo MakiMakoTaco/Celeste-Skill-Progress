@@ -9,6 +9,7 @@
 	"author": "Zelda",
 	"license": "ISC",
 	"dependencies": {
+		"celeste-skill-progress": "file:",
 		"commandkit": "^0.1.10",
 		"discord.js": "^14.12.1",
 		"googleapis": "^133.0.0",
