@@ -9,12 +9,12 @@ const {
 } = require('./checkSheets');
 
 // Utility function to retry a promise-returning function
-async function retry(fn, retries = 3, delay = 1000) {
+async function retry(fn, retries = 5, delay = 5000) {
 	for (let i = 0; i < retries; i++) {
 		try {
 			return await fn();
 		} catch (error) {
-			if (i === retries - 1) throw error;
+			if (i === retries) throw error;
 			console.log(`Retrying... (${i + 1}/${retries})`);
 			await new Promise((res) => setTimeout(res, delay));
 		}
