@@ -436,9 +436,9 @@ async function shoutouts(client) {
 		// Process usersData with concurrency limit of 100
 		await taskQueue(usersData, 100, processUserData);
 
-		setTimeout(() => {
-			shoutouts(client);
-		}, 1000 * 60 * 60);
+		// setTimeout(() => {
+		// 	shoutouts(client);
+		// }, 1000 * 60 * 60);
 		// } catch (error) {
 		// 	console.error(error);
 		// 	errorChannel.send(

@@ -11,11 +11,11 @@
 	"dependencies": {
 		"celeste-skill-progress": "file:",
 		"commandkit": "^0.1.10",
-		"discord.js": "^14.12.1",
+		"discord.js": "^14.17.3",
 		"dotenv": "^16.4.7",
 		"googleapis": "^144.0.0",
 		"he": "^1.2.0",
-		"mongoose": "^8.9.3",
+		"mongoose": "^8.9.5",
 		"nodemon": "^3.1.0"
 	}
 }
