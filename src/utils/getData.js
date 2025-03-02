@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const User = require('../schemas/UserStats');
 
 let sideMap = new Map();
 
@@ -52,36 +53,71 @@ async function getSheetData() {
 
 		console.log('Received sheet titles. Starting processing');
 
+		const fields = `username sheets.name sheets.userColumn sheets.totalClears`;
+		const usersCompareData = await User.find({}, fields);
+		const firstUserSheets = usersCompareData[0].sheets.map(
+			(sheet) => sheet.name,
+		);
+
+		const newSheets = sheetNames.data.sheets
+			.map((sheet) => sheet.properties.title)
+			.filter((title) => !firstUserSheets.includes(title));
+
 		for (let i = 0; i < sheetNames.data.sheets.length; i++) {
 			const sheetName = sheetNames.data.sheets[i].properties.title;
+			let sheetChange = false;
 
-			const fileInfo = await sheetsAPI.spreadsheets.values.batchGet({
-				spreadsheetId,
-				majorDimension: 'COLUMNS',
-				ranges: [`{sheetName}!A:A`, `{sheetName}!2:3`],
-			});
+			if (newSheets.includes(sheetName)) {
+				sheetChange = true;
+			} else {
+				const sheetMinData = await sheetsAPI.spreadsheets.values.batchGet({
+					spreadsheetId,
+					majorDimension: 'COLUMNS',
+					ranges: [`${sheetName}!A:A`, `${sheetName}!2:3`],
+				});
 
-			await checkChanges(fileInfo.data.valueRanges[0]);
+				sheetChange = await checkChanges(
+					sheetName,
+					sheetMinData.data.valueRanges,
+					usersCompareData,
+				);
+			}
+
+			if (sheetChange) {
+				const sheetInfo = await sheetsAPI.spreadsheets.get({
+					spreadsheetId,
+					ranges: `${sheetName}`,
+					fields: spreadsheetFields,
+					includeGridData: true,
+				});
+
+				await sortData(sheetInfo.data.sheets[0]);
+			}
 		}
-
-		// for (let i = 0; i < sheetNames.data.sheets.length; i++) {
-		// 	const sheetName = sheetNames.data.sheets[i].properties.title;
-
-		// 	const fileInfo = await sheetsAPI.spreadsheets.get({
-		// 		spreadsheetId,
-		// 		ranges: `${sheetName}`,
-		// 		fields: spreadsheetFields,
-		// 		includeGridData: true,
-		// 	});
-
-		// 	await sortData(fileInfo.data.sheets[0]);
-		// }
 
 		return;
 	} catch (error) {
 		console.error('Error fetching file:', error.message);
 		throw error;
 	}
+}
+
+async function checkChanges(sheetName, values, users) {
+	const userRow = values[1].values;
+
+	userRow.forEach((user) => {
+		if (user && user[0] !== 'Celeste Custom Maps') {
+			if (users.find((u) => u.username === user[0])) {
+				const userData = users.find((u) => u.username === user[0]);
+
+				if (userData.sheets[sheetName].totalClears !== user[1]) {
+					// Update user data
+				}
+			} else {
+				// Add user to database
+			}
+		}
+	});
 }
 
 async function sortData(sheetData) {
@@ -225,3 +261,5 @@ async function sortData(sheetData) {
 		// modId++;
 	}
 }
+
+module.exports = { getSheetData };
