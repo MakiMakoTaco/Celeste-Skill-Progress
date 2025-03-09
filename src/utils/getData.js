@@ -59,31 +59,14 @@ async function getSheetData() {
 			(sheet) => sheet.name,
 		);
 
-		const newSheets = sheetNames.data.sheets
-			.map((sheet) => sheet.properties.title)
-			.filter((title) => !firstUserSheets.includes(title));
-
 		for (let i = 0; i < sheetNames.data.sheets.length; i++) {
 			const sheetName = sheetNames.data.sheets[i].properties.title;
-			let sheetChange = false;
+			// let sheetChange = false;
+			// let changeReason = '';
 
-			if (newSheets.includes(sheetName)) {
-				sheetChange = true;
-			} else {
-				const sheetMinData = await sheetsAPI.spreadsheets.values.batchGet({
-					spreadsheetId,
-					majorDimension: 'COLUMNS',
-					ranges: [`${sheetName}!A:A`, `${sheetName}!2:3`],
-				});
+			if (!firstUserSheets.includes(sheetName)) {
+				// sheetChange = true;
 
-				sheetChange = await checkChanges(
-					sheetName,
-					sheetMinData.data.valueRanges,
-					usersCompareData,
-				);
-			}
-
-			if (sheetChange) {
 				const sheetInfo = await sheetsAPI.spreadsheets.get({
 					spreadsheetId,
 					ranges: `${sheetName}`,
@@ -92,6 +75,18 @@ async function getSheetData() {
 				});
 
 				await sortData(sheetInfo.data.sheets[0]);
+			} else {
+				const sheetMinData = await sheetsAPI.spreadsheets.values.batchGet({
+					spreadsheetId,
+					majorDimension: 'COLUMNS',
+					ranges: [`${sheetName}!A:A`, `${sheetName}!2:3`],
+				});
+
+				await checkChanges(
+					sheetName,
+					sheetMinData.data.valueRanges,
+					usersCompareData,
+				);
 			}
 		}
 
@@ -103,19 +98,25 @@ async function getSheetData() {
 }
 
 async function checkChanges(sheetName, values, users) {
-	const userRow = values[1].values;
+	const modColumn = values[0].values;
+	const userColumn = values[1].values;
 
-	userRow.forEach((user) => {
+	let modChanges = [];
+	let userChanges = [];
+
+	for (let i = 0; i < modColumn.length; i++) {}
+
+	userColumn.forEach((user) => {
 		if (user && user[0] !== 'Celeste Custom Maps') {
-			if (users.find((u) => u.username === user[0])) {
-				const userData = users.find((u) => u.username === user[0]);
+			// if (users.find((u) => u.username === user[0])) {
+			// 	const userData = users.find((u) => u.username === user[0]);
 
-				if (userData.sheets[sheetName].totalClears !== user[1]) {
-					// Update user data
-				}
-			} else {
-				// Add user to database
-			}
+			// 	if (userData.sheets[sheetName].totalClears !== user[1]) {
+			// 		return [true, 'clears'];
+			// 	}
+			// } else {
+			userChanges.push(user[0]);
+			// }
 		}
 	});
 }
@@ -261,5 +262,7 @@ async function sortData(sheetData) {
 		// modId++;
 	}
 }
+
+// getSheetData();
 
 module.exports = { getSheetData };
