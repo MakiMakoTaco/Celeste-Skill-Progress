@@ -54,6 +54,10 @@ async function getSheetData() {
 		console.log('Received sheet titles. Starting processing');
 
 		const fields = `username sheets.name sheets.userColumn sheets.totalClears`;
+		const firstUser = await User.findOne(
+			{},
+			fields + ', sheets.challenges.name sheets.challenges.modStats.name',
+		);
 		const usersCompareData = await User.find({}, fields);
 		const firstUserSheets = usersCompareData[0].sheets.map(
 			(sheet) => sheet.name,
@@ -65,6 +69,8 @@ async function getSheetData() {
 			// let changeReason = '';
 
 			if (!firstUserSheets.includes(sheetName)) {
+				console.log(`Sheet ${sheetName} is new`);
+				continue;
 				// sheetChange = true;
 
 				const sheetInfo = await sheetsAPI.spreadsheets.get({
@@ -86,6 +92,7 @@ async function getSheetData() {
 					sheetName,
 					sheetMinData.data.valueRanges,
 					usersCompareData,
+					firstUser,
 				);
 			}
 		}
@@ -97,14 +104,58 @@ async function getSheetData() {
 	}
 }
 
-async function checkChanges(sheetName, values, users) {
+async function checkChanges(sheetName, values, users, firstUser) {
 	const modColumn = values[0].values;
 	const userColumn = values[1].values;
+
+	const firstUserSide = firstUser.sheets.find(
+		(sheet) => sheet.name === sheetName,
+	).challenges;
 
 	let modChanges = [];
 	let userChanges = [];
 
-	for (let i = 0; i < modColumn.length; i++) {}
+	const sideMap = getModData(sheetName, modColumn);
+
+	// console.log(firstUserSide);
+
+	let newMods = [];
+	let removedMods = [];
+	let updatedMods = [];
+
+	for (const [tierName, mods] of sideMap) {
+		const firstUserTier =
+			firstUserSide.find((tier) => tier.name === tierName) ?? null;
+		if (!firstUserTier) {
+			// Entire tier is new
+			continue;
+		} else {
+			if (sheetName !== 'Archived') {
+				const firstUserMods = firstUserTier.modStats.map((mod) => mod.name);
+
+				newMods.push(mods.filter((mod) => !firstUserMods.includes(mod)));
+				removedMods.push(firstUserMods.filter((mod) => !mods.includes(mod)));
+			}
+		}
+	}
+
+	if (newMods.length > 0 && removedMods.length > 0) {
+		const newModsFlat = newMods.flat();
+		const removedModsFlat = removedMods.flat();
+
+		const newModsCompare = newModsFlat.map((mod) =>
+			mod.toLowerCase().split(' (')[0].trim(),
+		);
+		const removedModsCompare = removedModsFlat.map((mod) =>
+			mod.toLowerCase().split(' (')[0].trim(),
+		);
+
+		for (let i = 0; i < removedModsCompare.length; i++) {
+			updatedMods.push(
+				newModsCompare.filter((mod) => removedModsCompare[i].includes(mod)),
+			);
+		}
+	}
 
 	userColumn.forEach((user) => {
 		if (user && user[0] !== 'Celeste Custom Maps') {
@@ -119,6 +170,43 @@ async function checkChanges(sheetName, values, users) {
 			// }
 		}
 	});
+}
+
+function getModData(sheetName, modColumn) {
+	let tierName = '';
+	let sideMap = new Map();
+
+	// console.log(sheetName);
+
+	for (let i = 3; i < modColumn[0].length; i++) {
+		const modName = modColumn[0][i] ?? null;
+
+		if (!modName) continue;
+
+		if (modName.includes(' Challenges - Clear Any ')) {
+			const nameSplit = modName.split(' Challenges - Clear Any ');
+			// const color = rowData[i + 1].values[0]?.effectiveFormat.backgroundColor;
+			// const colorPlus = rowValues[0]?.effectiveFormat.backgroundColor;
+
+			tierName = nameSplit[0].trim().toString();
+			sideMap.set(tierName, []);
+
+			// console.log(`Starting processing for ${tierName} tier`);
+			continue;
+		} else if (
+			modName.includes(
+				`${sheetName === 'Catstare' ? 'Catstare' : tierName} Total (Out of `,
+			)
+		) {
+			continue;
+		} else {
+			if (tierName === '') continue;
+
+			sideMap.get(tierName).push(modName);
+		}
+	}
+
+	return sideMap;
 }
 
 async function sortData(sheetData) {
@@ -149,21 +237,13 @@ async function sortData(sheetData) {
 					'maskos37' /** Maskos37 */,
 					'Hikarirom' /** HikariRom */,
 					'Vikram' /** VIkram */,
-					'kem' /** Kem */,
-					'Sammysam' /** SammySam */,
+					// 'kem' /** Kem */,
+					// 'Sammysam' /** SammySam */,
 				];
 				// // Below are [side & catstare, dlc]
 				// const monitor = ['Monitor', 'monitor' /** catstare name */];
-				// const rocketguy2 = ['rocketguy2', 'Rocketguy2'];
-				// const evelyncubes = ['evelyncubes', 'EvelynCubes'];
-				// const kauan_cpi = ['Kauan_cpi', 'kauan_cpi'];
 
-				const extraNames = [
-					'monitor',
-					'Rocketguy2',
-					'EvelynCubes',
-					'kauan_cpi',
-				];
+				const extraNames = ['monitor'];
 
 				if (playerName) {
 					let name = playerName;
