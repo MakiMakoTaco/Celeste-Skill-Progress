@@ -1,5 +1,8 @@
 const { google } = require('googleapis');
-const User = require('../schemas/UserStats');
+// const User = require('../schemas/UserStats');
+const Sides = require('../schemas/Sides');
+const Tiers = require('../schemas/Tiers');
+const Players = require('../schemas/Players');
 
 let sideMap = new Map();
 
@@ -7,7 +10,6 @@ let tierMap = new Map();
 
 let modMap = new Map();
 
-let defaultPlayerProgress = new Set();
 let playerProgress = new Map();
 
 // Create Google Sheets API client
@@ -53,25 +55,30 @@ async function getSheetData() {
 
 		console.log('Received sheet titles. Starting processing');
 
-		const fields = `username sheets.name sheets.userColumn sheets.totalClears`;
-		const firstUser = await User.findOne(
-			{},
-			fields + ', sheets.challenges.name sheets.challenges.modStats.name',
-		);
-		const usersCompareData = await User.find({}, fields);
-		const firstUserSheets = usersCompareData[0].sheets.map(
-			(sheet) => sheet.name,
-		);
+		const sides = await Sides.find();
+		const sideNames = sides.map((side) => side.name);
+
+		const players = await Players.find();
+		// console.log(sides);
+		// process.exit();
+
+		const changes = {
+			sides: [],
+			tiers: [],
+			players: [],
+		};
+		// const newSides = [];
+		// const newTiers = [];
+		// const changes = [];
 
 		for (let i = 0; i < sheetNames.data.sheets.length; i++) {
 			const sheetName = sheetNames.data.sheets[i].properties.title;
-			// let sheetChange = false;
-			// let changeReason = '';
 
-			if (!firstUserSheets.includes(sheetName)) {
+			if (!sideNames.includes(sheetName)) {
+				// New side
 				console.log(`Sheet ${sheetName} is new`);
-				continue;
-				// sheetChange = true;
+				// changes.sides.push(sheetName);
+				// continue;
 
 				const sheetInfo = await sheetsAPI.spreadsheets.get({
 					spreadsheetId,
@@ -80,20 +87,33 @@ async function getSheetData() {
 					includeGridData: true,
 				});
 
-				await sortData(sheetInfo.data.sheets[0]);
+				await sortData(sheetInfo.data.sheets[0], i + 1);
 			} else {
+				const currentSide = sides.find((side) => side.name === sheetName);
+
+				if (currentSide) {
+					const tiers = await Tiers.find(
+						{ 'side.id': currentSide._id },
+						'name',
+					);
+					const tierNames = tiers.map((tier) => tier.name);
+
+					console.log(`Tier names for side ${sheetName}:`, tierNames);
+				} else {
+					console.log(`No side found with name ${sheetName}`);
+				}
+
 				const sheetMinData = await sheetsAPI.spreadsheets.values.batchGet({
 					spreadsheetId,
 					majorDimension: 'COLUMNS',
 					ranges: [`${sheetName}!A:A`, `${sheetName}!2:3`],
 				});
 
-				await checkChanges(
-					sheetName,
-					sheetMinData.data.valueRanges,
-					usersCompareData,
-					firstUser,
+				changes.players.push(
+					await checkChanges(sheetMinData.data.valueRanges, players),
 				);
+
+				await getPlayerData(changes.players, sheetName);
 			}
 		}
 
@@ -104,82 +124,100 @@ async function getSheetData() {
 	}
 }
 
-async function checkChanges(sheetName, values, users, firstUser) {
-	const modColumn = values[0].values;
-	const userColumn = values[1].values;
+async function checkChanges(values, players) {
+	// const modValues = values[0].values;
+	const playerValues = values[1].values;
 
-	const firstUserSide = firstUser.sheets.find(
-		(sheet) => sheet.name === sheetName,
-	).challenges;
+	// let modChanges = [];
+	const playerChanges = [];
 
-	let modChanges = [];
-	let userChanges = [];
+	playerValues.forEach((player) => {
+		if (player && player[0] !== 'Celeste Custom Maps') {
+			const playerData = players.find((p) => p.name === player[0]) ?? null;
 
-	const sideMap = getModData(sheetName, modColumn);
-
-	// console.log(firstUserSide);
-
-	let newMods = [];
-	let removedMods = [];
-	let updatedMods = [];
-
-	for (const [tierName, mods] of sideMap) {
-		const firstUserTier =
-			firstUserSide.find((tier) => tier.name === tierName) ?? null;
-		if (!firstUserTier) {
-			// Entire tier is new
-			continue;
-		} else {
-			if (sheetName !== 'Archived') {
-				const firstUserMods = firstUserTier.modStats.map((mod) => mod.name);
-
-				newMods.push(mods.filter((mod) => !firstUserMods.includes(mod)));
-				removedMods.push(firstUserMods.filter((mod) => !mods.includes(mod)));
+			if (!playerData || playerData.clearedMods.length !== player[1]) {
+				// Player is new or has a different number of clears
+				playerChanges.push([player[0], playerValues.indexOf(player)]);
 			}
 		}
-	}
-
-	if (newMods.length > 0 && removedMods.length > 0) {
-		const newModsFlat = newMods.flat();
-		const removedModsFlat = removedMods.flat();
-
-		const newModsCompare = newModsFlat.map((mod) =>
-			mod.toLowerCase().split(' (')[0].trim(),
-		);
-		const removedModsCompare = removedModsFlat.map((mod) =>
-			mod.toLowerCase().split(' (')[0].trim(),
-		);
-
-		for (let i = 0; i < removedModsCompare.length; i++) {
-			updatedMods.push(
-				newModsCompare.filter((mod) => removedModsCompare[i].includes(mod)),
-			);
-		}
-	}
-
-	userColumn.forEach((user) => {
-		if (user && user[0] !== 'Celeste Custom Maps') {
-			// if (users.find((u) => u.username === user[0])) {
-			// 	const userData = users.find((u) => u.username === user[0]);
-
-			// 	if (userData.sheets[sheetName].totalClears !== user[1]) {
-			// 		return [true, 'clears'];
-			// 	}
-			// } else {
-			userChanges.push(user[0]);
-			// }
-		}
 	});
+
+	return playerChanges;
+
+	// const sideMap = getModData(sheetName, modValues);
+
+	// let newMods = [];
+	// let removedMods = [];
+	// let updatedMods = [];
+
+	// for (const [tierName, mods] of sideMap) {
+	// 	const firstUserTier =
+	// 		firstUserSide.find((tier) => tier.name === tierName) ?? null;
+	// 	if (!firstUserTier) {
+	// 		// Entire tier is new
+	// 		continue;
+	// 	} else {
+	// 		if (sheetName !== 'Archived') {
+	// 			const firstUserMods = firstUserTier.modStats.map((mod) => mod.name);
+
+	// 			newMods.push(mods.filter((mod) => !firstUserMods.includes(mod)));
+	// 			removedMods.push(firstUserMods.filter((mod) => !mods.includes(mod)));
+	// 		}
+	// 	}
+	// }
+
+	// if (newMods.length > 0 && removedMods.length > 0) {
+	// 	const newModsFlat = newMods.flat();
+	// 	const removedModsFlat = removedMods.flat();
+
+	// 	const newModsCompare = newModsFlat.map((mod) =>
+	// 		mod.toLowerCase().split(' (')[0].trim(),
+	// 	);
+	// 	const removedModsCompare = removedModsFlat.map((mod) =>
+	// 		mod.toLowerCase().split(' (')[0].trim(),
+	// 	);
+
+	// 	for (let i = 0; i < removedModsCompare.length; i++) {
+	// 		updatedMods.push(
+	// 			newModsCompare.filter((mod) => removedModsCompare[i].includes(mod)),
+	// 		);
+	// 	}
+	// }
 }
 
-function getModData(sheetName, modColumn) {
+async function getPlayerData(players, sheetName) {
+	const playerNames = players[0].map((player) => player[0]);
+	const playerColumns = players[0].map((player) => player[1]);
+
+	const ranges = players[0].map((player) => {
+		return `${sheetName}!${player[1]}:${player[1]}`;
+	});
+
+	const errorChannel = await client.channels.fetch('1225142448737620124');
+
+	if (ranges.length < 250) {
+		try {
+			const playerData = await sheetsAPI.spreadsheets.get({
+				spreadsheetId,
+				fields: spreadsheetFields,
+				includeGridData: true,
+				ranges,
+			});
+		} catch (e) {
+			await errorChannel.send(e.message);
+			console.log(e);
+		}
+	} else {
+		await errorChannel.send('Too many players to fetch data for at once.');
+	}
+}
+
+function getModData(sheetName, modValues) {
 	let tierName = '';
 	let sideMap = new Map();
 
-	// console.log(sheetName);
-
-	for (let i = 3; i < modColumn[0].length; i++) {
-		const modName = modColumn[0][i] ?? null;
+	for (let i = 3; i < modValues[0].length; i++) {
+		const modName = modValues[0][i] ?? null;
 
 		if (!modName) continue;
 
@@ -191,17 +229,13 @@ function getModData(sheetName, modColumn) {
 			tierName = nameSplit[0].trim().toString();
 			sideMap.set(tierName, []);
 
-			// console.log(`Starting processing for ${tierName} tier`);
 			continue;
 		} else if (
-			modName.includes(
+			tierName !== '' &&
+			!modName.includes(
 				`${sheetName === 'Catstare' ? 'Catstare' : tierName} Total (Out of `,
 			)
 		) {
-			continue;
-		} else {
-			if (tierName === '') continue;
-
 			sideMap.get(tierName).push(modName);
 		}
 	}
@@ -209,140 +243,112 @@ function getModData(sheetName, modColumn) {
 	return sideMap;
 }
 
-async function sortData(sheetData) {
+async function sortData(sheetData, sheetOrder) {
 	const sheetName = sheetData.properties.title;
 	console.log(`Processing data for ${sheetName}`);
 
-	let tierName = '';
+	sideMap.set(sheetName, { position: sheetOrder, tiers: [] });
 
+	let tierName = '';
 	const userIndex = [];
 
-	for (let i = 1; i < sheetData.data[0].rowData.length; i++) {
-		if (i === 2) {
-			continue;
-		}
+	const rowData = sheetData.data[0].rowData;
 
-		const rowData = sheetData.data[0].rowData;
+	for (let i = 1; i < rowData.length; i++) {
+		if (i === 2) continue;
+
 		const rowValues = rowData[i].values;
 		const modName = rowValues[0]?.formattedValue ?? null;
 
 		if (!modName) continue;
-		// modName && modMap.has(modName)
 
 		if (i === 1) {
+			// Populate userIndex and initialize playerProgress
 			for (let index = 1; index < rowValues.length; index++) {
 				const playerName = rowValues[index]?.formattedValue;
-
-				const dupeNames = [
-					'maskos37' /** Maskos37 */,
-					'Hikarirom' /** HikariRom */,
-					'Vikram' /** VIkram */,
-					// 'kem' /** Kem */,
-					// 'Sammysam' /** SammySam */,
-				];
-				// // Below are [side & catstare, dlc]
-				// const monitor = ['Monitor', 'monitor' /** catstare name */];
-
-				const extraNames = ['monitor'];
-
 				if (playerName) {
-					let name = playerName;
-
-					if (dupeNames.includes(playerName)) {
-						name = '';
-					}
-
-					if (extraNames.includes(playerName)) {
-						switch (playerName) {
-							case 'monitor':
-								name = 'Monitor';
-								break;
-							case 'Rocketguy2':
-								name = 'rocketguy2';
-								break;
-							case 'EvelynCubes':
-								name = 'evelyncubes';
-								break;
-							case 'kauan_cpi':
-								name = 'Kauan_cpi';
-								break;
-						}
-					}
-
-					userIndex.push(name);
+					userIndex.push(playerName);
+					playerProgress.set(playerName, { clearedMods: [] });
 				}
 			}
-
-			defaultPlayerProgress.add(null, {
-				totalClears: 0,
-				sheets: [],
-			});
-
-			userIndex.forEach((user) => {
-				if (user !== '') {
-					if (!playerProgress.has(user)) {
-						playerProgress.set(user, {
-							totalClears: 0,
-							sheets: [],
-						});
-					} else {
-						const player = playerProgress.get(user);
-
-						player;
-					}
-				}
-			});
-
 			continue;
-		} else if (modName.includes(' Challenges - Clear Any ')) {
+		}
+
+		if (modName.includes(' Challenges - Clear Any ')) {
+			// Start a new tier
 			const nameSplit = modName.split(' Challenges - Clear Any ');
-			// const color = rowData[i + 1].values[0]?.effectiveFormat.backgroundColor;
-			// const colorPlus = rowValues[0]?.effectiveFormat.backgroundColor;
 
-			tierName = nameSplit[0].trim().toString();
+			tierName = nameSplit[0].trim();
+			const side = sideMap.get(sheetName);
 
-			// defaultPlayerProgress
+			side.tiers.push({
+				name: tierName,
+				position: side.tiers.length + 1,
+				quickInstaller: rowValues[0]?.hyperlink,
+				mods: [],
+			});
 
 			console.log(`Starting processing for ${tierName} tier`);
 			continue;
-		} else if (
+		}
+
+		if (
 			modName.includes(
 				`${sheetName === 'Catstare' ? 'Catstare' : tierName} Total (Out of `,
 			)
 		) {
+			// Skip total rows
 			continue;
 		}
 
+		// Add mod to the current tier
+		const side = sideMap.get(sheetName);
+		const currentTier = side.tiers.find((tier) => tier.tierName === tierName);
+
+		if (currentTier) {
+			currentTier.mods.push({
+				name: modName,
+				row: i,
+				link: rowValues[0]?.hyperlink,
+				notes: rowValues[0]?.note,
+				position: currentTier.mods.length + 1,
+			});
+		}
+
+		// Update player progress
 		for (let index = 1; index < rowValues.length; index++) {
-			const playerName = userIndex[index - 1];
+			if (Boolean(rowValues[index]?.formattedValue)) {
+				const playerName = userIndex[index - 1];
+				const player = playerProgress.get(playerName);
 
-			const player = playerProgress.get(playerName);
-
-			if (player) {
-				player.mods.push({
-					modId,
-					cleared: Boolean(rowValues[index]?.formattedValue),
+				player.clearedMods.push({
+					modRow: i + 1,
+					archived: sheetName === 'Archived',
 				});
 			}
 		}
-
-		// // Get mod data
-		// try {
-		// 	await getModData(rowValues[0]);
-		// } catch (e) {
-		// 	if (e === 'No link in cell') {
-		// 		console.log(`${e} A-${i}`);
-		// 		continue;
-		// 	} else {
-		// 		console.log(e);
-		// 		process.exit();
-		// 	}
-		// }
-
-		// modId++;
 	}
-}
 
-// getSheetData();
+	const side = sideMap.get(sheetName);
+	side.tiers.forEach((tier) => {
+		tier.mods.forEach(async (mod) => {
+			if (!mod.link) {
+				console.log(`${mod.name} does not have a link`);
+
+				// try {
+				// 	const modInfo = await sheetsAPI.spreadsheets.values.get({
+				// 		spreadsheetId,
+				// 		range: `${sheetName}!${mod.row}:${mod.row}`,
+				// 		fields: 'data.rowData.values.hyperlink',
+				// 	});
+
+				// 	console.log(modInfo);
+				// } catch (e) {
+				// 	console.log(e.message);
+				// }
+			}
+		});
+	});
+}
 
 module.exports = { getSheetData };
