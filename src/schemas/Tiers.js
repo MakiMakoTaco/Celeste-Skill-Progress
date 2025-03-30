@@ -5,6 +5,10 @@ const tierSchema = new Schema({
 		type: String,
 		required: true,
 	},
+	clearsForRank: {
+		type: Number,
+		required: true,
+	},
 	side: {
 		id: {
 			type: Schema.Types.ObjectId,

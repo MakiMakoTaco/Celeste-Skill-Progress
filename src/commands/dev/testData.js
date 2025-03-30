@@ -10,8 +10,8 @@ module.exports = {
 		await interaction.deferReply();
 
 		try {
-			await getSheetData();
-			await interaction.editReply('Data fetched');
+			const reply = await getSheetData();
+			await interaction.editReply(reply ?? 'Data fetched');
 		} catch (e) {
 			console.error(e);
 			await interaction.editReply('Error fetching data');

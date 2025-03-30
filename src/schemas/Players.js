@@ -8,10 +8,15 @@ const playerSchema = new Schema({
 	},
 	clearedMods: [
 		{
+			sideId: {
+				type: Schema.Types.ObjectId,
+				ref: 'Sides',
+			},
 			id: {
 				type: Schema.Types.ObjectId,
 				ref: 'Mods',
 			},
+			link: String,
 			archived: {
 				type: Boolean,
 				default: false,

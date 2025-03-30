@@ -5,16 +5,14 @@ const modSchema = new Schema({
 		type: String,
 		required: true,
 	},
-	tier: [
-		{
-			id: {
-				type: Schema.Types.ObjectId,
-				ref: 'Tiers',
-				required: true,
-			},
-			position: Number,
+	tier: {
+		id: {
+			type: Schema.Types.ObjectId,
+			ref: 'Tiers',
+			required: true,
 		},
-	],
+		position: Number,
+	},
 	row: Number,
 	link: String,
 	notes: String,
