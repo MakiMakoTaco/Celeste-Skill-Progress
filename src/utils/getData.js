@@ -73,6 +73,14 @@ async function getSheetData() {
 				const tiers = await Tiers.find({ 'side.id': currentSide._id });
 				const tierNames = tiers.map((tier) => tier.name);
 
+				await Promise.all(
+					tiers.map(async (tier) => {
+						const count = await Mods.countDocuments({ 'tier.id': tier.id });
+
+						tier.modCount = count; // Update the modCount field
+					}),
+				);
+
 				console.log(`Tier names for side ${sheetName}:`, tierNames);
 
 				if (sheetName === 'A-Side') {
@@ -180,6 +188,7 @@ async function checkChanges(side, values, players) {
 	// 	}
 	// }
 }
+
 async function getPlayerData(side, tiers, players) {
 	// const playerNames = players[0]
 	// 	.map((player) => player[0])
@@ -213,73 +222,74 @@ async function getPlayerData(side, tiers, players) {
 				ranges,
 			});
 
-			// promise all
-			playerData.data.sheets[0].data.forEach(async (row) => {
-				const rowData = row.rowData;
-				const playerName = rowData[1].values[0].formattedValue;
+			await Promise.all(
+				playerData.data.sheets[0].data.map(async (row) => {
+					const rowData = row.rowData;
+					const playerName = rowData[1].values[0].formattedValue;
 
-				if (playerName && playerName !== 'Celeste Custom Maps') {
-					console.log(`Checking info for ${playerName}`);
+					if (playerName && playerName !== 'Celeste Custom Maps') {
+						console.log(`Checking info for ${playerName}`);
 
-					const player =
-						(await Players.findOne({ name: playerName })) ??
-						new Players({
-							name: playerName,
-							clearedMods: [],
-							roles: [],
-						});
+						const player =
+							(await Players.findOne({ name: playerName })) ??
+							new Players({
+								name: playerName,
+								clearedMods: [],
+								roles: [],
+							});
 
-					let newClearedMods = false;
+						let newClearedMods = false;
 
-					rowData.forEach(async (data, index) => {
-						if (index > 3 && data.values) {
-							const value = data.values;
+						await Promise.all(
+							rowData.map(async (data, index) => {
+								if (index > 3 && data.values) {
+									const value = data.values;
 
-							try {
-								if (value[0]?.formattedValue === 'Clear!') {
-									const mod =
-										(await Mods.findOne(
-											{ row: index + 1 },
-											'_id name tier.id',
-										)) ?? null;
+									try {
+										if (value[0]?.formattedValue === 'Clear!') {
+											const mod =
+												(await Mods.findOne(
+													{ row: index + 1 },
+													'_id name tier.id',
+												)) ?? null;
 
-									if (mod && !player.clearedMods.includes(mod.id)) {
-										console.log(`Adding ${mod.name} to ${playerName}`);
+											if (mod && !player.clearedMods.includes(mod.id)) {
+												newClearedMods = true;
 
-										newClearedMods = true;
+												player.clearedMods.push({
+													id: mod.id,
+													link: value.hyperlink,
+													archived,
+												});
 
-										player.clearedMods.push({
-											id: mod.id,
-											link: value.hyperlink,
-											archived,
-										});
-
-										// Get mod something tier compare shoutout if meet requirements
-										// } else if (!mod) {
-										// 	console.log(
-										// 		`Could not find mod at row ${index + 1} in ${sheetName}`,
-										// 	);
+												// Get mod something tier compare shoutout if meet requirements
+												// } else if (!mod) {
+												// 	console.log(
+												// 		`Could not find mod at row ${index + 1} in ${sheetName}`,
+												// 	);
+											}
+										}
+									} catch (e) {
+										console.error(e);
+										process.exit();
 									}
 								}
-							} catch (e) {
-								console.error(e);
-								process.exit();
+							}),
+						);
+
+						if (newClearedMods) {
+							if (side.name !== 'Archived') {
+								await shoutout(player, tiers);
 							}
-						}
-					});
 
-					if (newClearedMods) {
-						if (side.name !== 'Archived') {
-							await shoutout(playerName, player.clearedMods, player.roles);
+							// await player.save();
+							// console.log(`Saved ${playerName} with new cleared mods`);
 						}
-
-						// await player.save();
-						// console.log(`Saved ${playerName} with new cleared mods`);
 					}
-				}
 
-				// Something something shoutout if player has more cleared mods in a tier than needed for role(+)
-			});
+					// Something something shoutout if player has more cleared mods in a tier than needed for role(+)
+				}),
+			);
 		} catch (e) {
 			// await errorChannel.send(e.message);
 			console.log(e);
@@ -388,7 +398,7 @@ async function sortData(sheetData, sheetOrder) {
 		if (currentTier) {
 			currentTier.mods.push({
 				name: modName,
-				row: i,
+				row: i + 1,
 				link: rowValues[0]?.hyperlink,
 				notes: rowValues[0]?.note,
 				position: currentTier.mods.length + 1,
@@ -475,10 +485,31 @@ async function saveSide(sideData = null) {
 	});
 }
 
-async function shoutout(playerName, mods, oldRoles = []) {
-	const tierIds = mods.map((mod) => mod.tier.id);
-	console.log(tierIds);
-	process.exit();
+async function shoutout(player, tiers) {
+	const modIds = player.clearedMods.map((mod) => mod.id);
+
+	// Add to player map -> side: tier objects with tier name and plus rank bool
+	await Promise.all(
+		tiers.map(async (tier) => {
+			try {
+				const clearedMods = await Mods.countDocuments({
+					_id: { $in: modIds },
+					'tier.id': tier.id,
+				});
+
+				if (clearedMods >= tiers.modCount) {
+					// return true
+				} else if (
+					clearedMods >= tiers.clearsForRank &&
+					clearedMods < tiers.modCount
+				) {
+					// return false
+				}
+			} catch (e) {
+				console.error(e);
+			}
+		}),
+	);
 }
 
 module.exports = { getSheetData };

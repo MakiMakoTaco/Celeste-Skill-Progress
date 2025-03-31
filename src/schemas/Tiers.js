@@ -9,6 +9,7 @@ const tierSchema = new Schema({
 		type: Number,
 		required: true,
 	},
+	modCount: Number,
 	side: {
 		id: {
 			type: Schema.Types.ObjectId,
