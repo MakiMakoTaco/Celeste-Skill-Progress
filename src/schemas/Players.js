@@ -17,10 +17,6 @@ const playerSchema = new Schema({
 				ref: 'Mods',
 			},
 			link: String,
-			archived: {
-				type: Boolean,
-				default: false,
-			},
 		},
 	],
 	roles: Array,

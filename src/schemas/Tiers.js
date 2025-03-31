@@ -5,7 +5,7 @@ const tierSchema = new Schema({
 		type: String,
 		required: true,
 	},
-	clearsForRank: {
+	requiredClears: {
 		type: Number,
 		required: true,
 	},
