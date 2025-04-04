@@ -12,7 +12,7 @@ const playerSchema = new Schema({
 				type: Schema.Types.ObjectId,
 				ref: 'Sides',
 			},
-			id: {
+			modId: {
 				type: Schema.Types.ObjectId,
 				ref: 'Mods',
 			},
