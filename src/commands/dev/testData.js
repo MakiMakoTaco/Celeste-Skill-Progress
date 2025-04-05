@@ -1,20 +1,22 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { getSheetData } = require('../../utils/getData');
+const { getSheetData, shoutouts } = require('../../utils/getData');
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('get-test-data')
 		.setDescription('tests getting data with new functions'),
 
-	run: async ({ interaction }) => {
+	run: async ({ interaction, client }) => {
 		await interaction.deferReply();
 
 		try {
-			const reply = await getSheetData();
-			await interaction.editReply(reply ?? 'Data fetched');
+			await getSheetData();
+			await shoutouts(client);
+
+			await interaction.editReply('Shoutouts sucessful');
 		} catch (e) {
 			console.error(e);
-			await interaction.editReply('Error fetching data');
+			await interaction.editReply(e.message);
 		}
 	},
 

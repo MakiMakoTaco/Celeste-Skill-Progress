@@ -5,6 +5,14 @@ const tierSchema = new Schema({
 		type: String,
 		required: true,
 	},
+	first: {
+		type: Boolean,
+		default: false,
+	},
+	firstPlus: {
+		type: Boolean,
+		default: false,
+	},
 	requiredClears: {
 		type: Number,
 		required: true,

@@ -5,7 +5,8 @@
 - [ ] Update logic to get [user stats](src/utils/getData.js) ([old data grabber](src/utils/checkSheets.js))
   - [x] Compare mod data
   - [x] Compare player changes
-  - [ ] Update Players
+  - [x] Shoutout players with changes
+  - [ ] Update players
   <!-- - [ ] Make sure user stat logic only updates user if a change to the sheets or user clears (on that sheet) aren't the same -->
 - [ ] Update [shoutout](src/utils/shoutouts.js) logic to update all users if a change to the sheets (a map change/another side)
 
