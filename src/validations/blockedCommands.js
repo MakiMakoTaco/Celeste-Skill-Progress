@@ -1,4 +1,14 @@
-const allowedCommands = ['discord', 'invite', 'ping', 'quick-installer'];
+const allowedCommands = [
+	'create-jsons',
+	'get-data',
+	'reload',
+	'test-shoutout',
+	'update',
+	'discord',
+	'invite',
+	'ping',
+	'quick-installer',
+];
 const { MessageFlags } = require('discord.js');
 
 module.exports = ({ interaction, commandObj }) => {

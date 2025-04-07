@@ -41,7 +41,7 @@ const spreadsheetFields =
 // 	return `#${r}${g}${b}`;
 // }
 
-async function getSheetData(fast = false) {
+async function getSheetData(client = null, interaction, fast = false) {
 	// TESTING ONLY
 	await Sides.deleteMany();
 	await Tiers.deleteMany();
@@ -77,6 +77,8 @@ async function getSheetData(fast = false) {
 						: sheetName === 'Archived'
 						? 1001
 						: i + 1,
+					client,
+					interaction,
 					fast,
 				);
 			} else {
@@ -127,10 +129,20 @@ async function getSheetData(fast = false) {
 	}
 }
 
-async function sortData(sheetData, sheetOrder, fast = false) {
-	console.log('Sorting data');
-
+async function sortData(
+	sheetData,
+	sheetOrder,
+	client,
+	interaction,
+	fast = false,
+) {
 	const sheetName = sheetData.properties.title;
+
+	try {
+		await interaction.followUp(`Starting processing for ${sheetName}`);
+	} catch (e) {
+		console.log(e);
+	}
 
 	const newSide = await Sides.create({
 		name: sheetName,
@@ -238,7 +250,31 @@ async function sortData(sheetData, sheetOrder, fast = false) {
 								});
 							}
 						} catch (e) {
-							console.error(e.message);
+							let errorChannel;
+
+							if (client) {
+								const guild =
+									client.guilds.cache.get('773124995684761630') ??
+									(await client.guilds.fetch('773124995684761630')); // Get Testing server if test = true
+
+								errorChannel =
+									guild.channels.cache.get('1225142448737620124') ??
+									(await guild.channels.fetch('1225142448737620124')); // Get Testing shoutout channel if test = true
+							}
+
+							if (errorChannel) {
+								try {
+									await errorChannel.send(
+										`${e.message}. On ${sheetName}, row: ${
+											rowIndex + 1
+										}, for player: ${playerName}
+										}`,
+									);
+								} catch (e) {
+									console.error(e);
+								}
+							}
+							console.error(e);
 						}
 					}),
 				);
@@ -249,6 +285,13 @@ async function sortData(sheetData, sheetOrder, fast = false) {
 				return player;
 			}),
 		);
+
+		try {
+			interaction.followUp(`Finished processing for ${sheetName}`);
+		} catch (e) {
+			console.error(e.message);
+		}
+		console.log(`Finished processing players for ${sheetName}`);
 	} else {
 		for (
 			let column = 0;
