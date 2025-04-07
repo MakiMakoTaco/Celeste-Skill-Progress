@@ -41,20 +41,18 @@ const spreadsheetFields =
 // 	return `#${r}${g}${b}`;
 // }
 
-async function getSheetData() {
+async function getSheetData(fast = false) {
+	// TESTING ONLY
+	await Sides.deleteMany();
+	await Tiers.deleteMany();
+	await Mods.deleteMany();
+	await Players.deleteMany();
+
 	try {
 		const sheetNames = await sheetsAPI.spreadsheets.get({
 			spreadsheetId,
 			fields: 'sheets.properties.title',
 		});
-
-		console.log('Received sheet titles. Starting processing');
-
-		const changes = {
-			sides: [],
-			tiers: [],
-			players: [],
-		};
 
 		for (let i = 0; i < sheetNames.data.sheets.length; i++) {
 			const sheet = sheetNames.data.sheets[i];
@@ -63,8 +61,6 @@ async function getSheetData() {
 
 			if (!side) {
 				// New side
-				console.log(`Sheet ${sheetName} is new`);
-
 				const sheetInfo = await sheetsAPI.spreadsheets.get({
 					spreadsheetId,
 					ranges: `${sheetName}`,
@@ -81,9 +77,9 @@ async function getSheetData() {
 						: sheetName === 'Archived'
 						? 1001
 						: i + 1,
+					fast,
 				);
 			} else {
-				console.log(`Sheet ${sheetName} already exists, checking for changes`);
 				// Existing side
 				const tiers = await Tiers.find(
 					{ 'side.id': side._id },
@@ -117,11 +113,12 @@ async function getSheetData() {
 					ranges: [`${sheetName}!A:A`, `${sheetName}!2:3`],
 				});
 
-				changes.players.push(
-					await checkChanges(side, sheetMinData.data.valueRanges),
+				const playerChanges = await checkChanges(
+					side,
+					sheetMinData.data.valueRanges,
 				);
 
-				await getPlayerData(side, tiers, changes.players);
+				await getPlayerData(side, tiers, playerChanges);
 			}
 		}
 	} catch (error) {
@@ -130,129 +127,250 @@ async function getSheetData() {
 	}
 }
 
-async function sortData(sheetData, sheetOrder) {
+async function sortData(sheetData, sheetOrder, fast = false) {
+	console.log('Sorting data');
+
 	const sheetName = sheetData.properties.title;
 
 	const newSide = await Sides.create({
 		name: sheetName,
 		position: sheetOrder,
 	});
+	const tierIds = [];
 
 	const rowData = sheetData.data[0].rowData;
 
-	for (
-		let column = 0;
-		column < sheetData.properties.gridProperties.columnCount;
-		column++
-	) {
-		if (column === 0) {
-			let currentTier;
-			let tierLength = 0;
-			let modLength = 0;
+	if (fast) {
+		let currentTier;
+		let tierLength = 0;
+		let modLength = 0;
 
-			for (
-				let row = 3;
-				row < sheetData.properties.gridProperties.rowCount;
-				row++
+		for (
+			let row = 3;
+			row < sheetData.properties.gridProperties.rowCount;
+			row++
+		) {
+			const cell = rowData[row]?.values[0];
+			const modName = cell?.formattedValue ?? null;
+
+			if (!modName) continue;
+
+			if (
+				currentTier &&
+				modName.includes(
+					`${sheetName === 'Catstare' ? 'Catstare ' : ''}${
+						currentTier.name
+					} Total (Out of `,
+				)
 			) {
-				const cell = rowData[row]?.values[0];
-				const modName = cell?.formattedValue ?? null;
-
-				if (!modName) continue;
-
-				if (
-					currentTier &&
-					modName.includes(
-						`${sheetName === 'Catstare' ? 'Catstare ' : ''}${
-							currentTier.name
-						} Total (Out of `,
-					)
-				) {
-					// Skip total rows
-					continue;
-				}
-
-				if (modName.includes(' Challenges - Clear Any ')) {
-					// Start a new tier
-					const nameSplit = modName.split(' Challenges - Clear Any ');
-
-					const tierName = nameSplit[0].trim();
-
-					currentTier = await Tiers.create({
-						name: tierName,
-						requiredClears: nameSplit[1].trim(),
-						side: {
-							id: newSide.id,
-							position: ++tierLength,
-						},
-						quickInstaller: cell?.hyperlink,
-					});
-
-					modLength = 0; // Reset mod length for the new tier
-				} else if (currentTier) {
-					// Add mod to the current tier
-					await Mods.create({
-						name: modName,
-						tier: {
-							id: currentTier.id,
-							position: ++modLength,
-						},
-						row: row + 1,
-						link: cell?.hyperlink,
-						notes: cell?.note,
-					});
-				}
+				// Skip total rows
+				continue;
 			}
-		} else if (rowData[1]?.values[column]) {
-			const playerName = rowData[1].values[column].formattedValue ?? null;
 
-			if (!playerName) continue;
+			if (modName.includes(' Challenges - Clear Any ')) {
+				// Start a new tier
+				const nameSplit = modName.split(' Challenges - Clear Any ');
 
-			const player =
-				(await Players.findOne({ name: playerName })) ??
-				new Players({
-					name: playerName,
-					clearedMods: [],
-					roles: [],
+				const tierName = nameSplit[0].trim();
+
+				currentTier = await Tiers.create({
+					name: tierName,
+					requiredClears: nameSplit[1].trim(),
+					side: {
+						id: newSide.id,
+						position: ++tierLength,
+					},
+					quickInstaller: cell?.hyperlink,
 				});
 
-			for (
-				let row = 4;
-				row < sheetData.properties.gridProperties.rowCount;
-				row++
-			) {
-				const cell = rowData[row]?.values[column];
-				const cellValue = cell?.formattedValue ?? null;
+				tierIds.push(currentTier._id);
 
-				const modId = await Mods.findOne({ row: row + 1 }, '_id');
-
-				if (cellValue === 'Clear!') {
-					player.clearedMods.push({
-						sideId: newSide.id,
-						modId: modId._id,
-						link: cell?.hyperlink,
-					});
-				}
+				modLength = 0; // Reset mod length for the new tier
+			} else if (currentTier) {
+				// Add mod to the current tier
+				await Mods.create({
+					name: modName,
+					tier: {
+						id: currentTier.id,
+						position: ++modLength,
+					},
+					row: row + 1,
+					link: cell?.hyperlink,
+					notes: cell?.note,
+				});
 			}
+		}
 
-			// shoutout stuff
+		console.log('Processed side data, starting player data');
 
-			await player.save();
-			console.log(
-				`Saved ${playerName} with cleared ${player.clearedMods.length} mods`,
-			);
+		await Promise.all(
+			rowData[1].values.map(async (column, columnIndex) => {
+				if (columnIndex === 0) return;
+
+				const playerName = column.formattedValue ?? null;
+
+				if (!playerName) return;
+
+				const player =
+					(await Players.findOne({ name: playerName })) ??
+					new Players({
+						name: playerName,
+						clearedMods: [],
+						roles: [],
+					});
+
+				await Promise.all(
+					rowData.map(async (row, rowIndex) => {
+						const cell = row?.values[columnIndex];
+						const cellValue = cell?.formattedValue ?? null;
+
+						try {
+							const modId = await Mods.findOne(
+								{ row: rowIndex + 1, 'tier.id': { $in: tierIds } },
+								'_id',
+							);
+
+							if (cellValue === 'Clear!') {
+								player.clearedMods.push({
+									sideId: newSide.id,
+									modId: modId._id,
+									link: cell?.hyperlink,
+								});
+							}
+						} catch (e) {
+							console.error(e.message);
+						}
+					}),
+				);
+
+				await player.save();
+				console.log(`Finished sorting data for ${playerName}`);
+
+				return player;
+			}),
+		);
+	} else {
+		for (
+			let column = 0;
+			column < sheetData.properties.gridProperties.columnCount;
+			column++
+		) {
+			if (column === 0) {
+				let currentTier;
+				let tierLength = 0;
+				let modLength = 0;
+
+				for (
+					let row = 3;
+					row < sheetData.properties.gridProperties.rowCount;
+					row++
+				) {
+					const cell = rowData[row]?.values[0];
+					const modName = cell?.formattedValue ?? null;
+
+					if (!modName) continue;
+
+					if (
+						currentTier &&
+						modName.includes(
+							`${sheetName === 'Catstare' ? 'Catstare ' : ''}${
+								currentTier.name
+							} Total (Out of `,
+						)
+					) {
+						// Skip total rows
+						continue;
+					}
+
+					if (modName.includes(' Challenges - Clear Any ')) {
+						// Start a new tier
+						const nameSplit = modName.split(' Challenges - Clear Any ');
+
+						const tierName = nameSplit[0].trim();
+
+						currentTier = await Tiers.create({
+							name: tierName,
+							requiredClears: nameSplit[1].trim(),
+							side: {
+								id: newSide.id,
+								position: ++tierLength,
+							},
+							quickInstaller: cell?.hyperlink,
+						});
+
+						tierIds.push(currentTier._id);
+
+						modLength = 0; // Reset mod length for the new tier
+					} else if (currentTier) {
+						// Add mod to the current tier
+						await Mods.create({
+							name: modName,
+							tier: {
+								id: currentTier.id,
+								position: ++modLength,
+							},
+							row: row + 1,
+							link: cell?.hyperlink,
+							notes: cell?.note,
+						});
+					}
+				}
+			} else if (rowData[1]?.values[column]) {
+				const playerName = rowData[1].values[column].formattedValue ?? null;
+
+				if (!playerName) continue;
+
+				const player =
+					(await Players.findOne({ name: playerName })) ??
+					new Players({
+						name: playerName,
+						clearedMods: [],
+						roles: [],
+					});
+
+				for (
+					let row = 4;
+					row < sheetData.properties.gridProperties.rowCount;
+					row++
+				) {
+					const cell = rowData[row]?.values[column];
+					const cellValue = cell?.formattedValue ?? null;
+
+					const modId = await Mods.findOne(
+						{ row: row + 1, 'tier.id': { $in: tierIds } },
+						'_id',
+					);
+
+					if (cellValue === 'Clear!') {
+						player.clearedMods.push({
+							sideId: newSide.id,
+							modId: modId._id,
+							link: cell?.hyperlink,
+						});
+					}
+				}
+
+				// shoutout stuff
+				await prepareShoutouts(
+					player,
+					await Tiers.find({ 'side.id': newSide._id }),
+					sheetName,
+				);
+
+				await player.save();
+				// console.log(
+				// 	`Saved ${playerName} with cleared ${player.clearedMods.length} mods`,
+				// );
+			}
 		}
 	}
 }
 
 async function checkChanges(side, values) {
-	// const modValues = values[0].values;
 	const playerValues = values[1].values;
 
-	// let modChanges = [];
 	const playerChanges = [];
 
-	// playerValues.forEach((player, index) => {
 	for (let i = 1; i < playerValues.length; i++) {
 		const playerColumn = playerValues[i];
 
@@ -276,83 +394,38 @@ async function checkChanges(side, values) {
 			}
 		}
 	}
-	// });
 
 	return playerChanges;
-
-	// const sideMap = getModData(sheetName, modValues);
-
-	// let newMods = [];
-	// let removedMods = [];
-	// let updatedMods = [];
-
-	// for (const [tierName, mods] of sideMap) {
-	// 	const firstUserTier =
-	// 		firstUserSide.find((tier) => tier.name === tierName) ?? null;
-	// 	if (!firstUserTier) {
-	// 		// Entire tier is new
-	// 		continue;
-	// 	} else {
-	// 		if (sheetName !== 'Archived') {
-	// 			const firstUserMods = firstUserTier.modStats.map((mod) => mod.name);
-
-	// 			newMods.push(mods.filter((mod) => !firstUserMods.includes(mod)));
-	// 			removedMods.push(firstUserMods.filter((mod) => !mods.includes(mod)));
-	// 		}
-	// 	}
-	// }
-
-	// if (newMods.length > 0 && removedMods.length > 0) {
-	// 	const newModsFlat = newMods.flat();
-	// 	const removedModsFlat = removedMods.flat();
-
-	// 	const newModsCompare = newModsFlat.map((mod) =>
-	// 		mod.toLowerCase().split(' (')[0].trim(),
-	// 	);
-	// 	const removedModsCompare = removedModsFlat.map((mod) =>
-	// 		mod.toLowerCase().split(' (')[0].trim(),
-	// 	);
-
-	// 	for (let i = 0; i < removedModsCompare.length; i++) {
-	// 		updatedMods.push(
-	// 			newModsCompare.filter((mod) => removedModsCompare[i].includes(mod)),
-	// 		);
-	// 	}
-	// }
 }
 
 async function getPlayerData(side, tiers, players) {
-	const ranges = players[0]
-		.map((player) => {
-			return `${side.name}!${player.column}:${player.column}`;
-		})
-		.slice(0, 15); // Limit to 25 ranges for testing
+	const tierIds = tiers.map((tier) => tier._id);
 
-	// do max 50 at a time (change to a loop and split)
-	if (ranges.length < 50) {
-		console.log('Attempting to get player data');
+	const ranges = players.map((player) => {
+		return `${side.name}!${player.column}:${player.column}`;
+	});
 
+	// Process in batches of 250
+	for (let i = 0; i < ranges.length; i += 250) {
+		const batch = ranges.slice(i, i + 250);
+
+		// Perform operations on the current batch
 		try {
 			const playerData = await sheetsAPI.spreadsheets.get({
 				spreadsheetId,
 				fields: 'sheets.data.rowData.values(formattedValue,hyperlink)',
 				includeGridData: true,
-				ranges,
+				ranges: batch,
 			});
 
+			// Process the player data for the current batch
 			const data = playerData.data.sheets[0].data;
 
-			// await Promise.all(
-			// 	playerData.data.sheets[0].data.map(async (row) => {
-			for (let i = 0; i < data.length; i++) {
-				const rowData = data[i].rowData;
+			for (let j = 0; j < data.length; j++) {
+				const rowData = data[j].rowData;
 				const playerName = rowData[1]?.values[0]?.formattedValue;
 
 				if (playerName) {
-					console.log(`Checking info for ${playerName}`);
-
-					// const playerClears = players[i].clears;
-
 					const player =
 						(await Players.findOne({ name: playerName })) ??
 						new Players({
@@ -363,24 +436,21 @@ async function getPlayerData(side, tiers, players) {
 
 					let newClearedMods = false;
 
-					// await Promise.all(
-					// 	rowData.map(async (data, index) => {
-					// if (i > 3 && data.values) {
-					for (let j = 4; j < rowData.length; j++) {
-						const values = rowData[j]?.values?.[0];
+					for (let k = 4; k < rowData.length; k++) {
+						const values = rowData[k]?.values?.[0];
 
 						if (!values) continue;
 
 						try {
 							if (values?.formattedValue === 'Clear!') {
 								const mod = await Mods.findOne(
-									{ row: j + 1 },
+									{ row: k + 1, 'tier.id': { $in: tierIds } },
 									'_id name tier.id',
 								);
 
-								if (!mod && i) {
-									console.log(
-										`Could not find mod at row ${j + 1} in ${side.name}`,
+								if (!mod && j) {
+									console.error(
+										`Could not find mod at row ${k + 1} in ${side.name}`,
 									);
 									continue;
 								}
@@ -402,75 +472,26 @@ async function getPlayerData(side, tiers, players) {
 							}
 						} catch (e) {
 							console.error(e);
-							process.exit();
 						}
 					}
-					// }
-					// 	}),
-					// );
-
-					console.log(newClearedMods);
 
 					if (newClearedMods) {
 						if (side.name !== 'Archived') {
 							await prepareShoutouts(player, tiers, side.name);
 						}
 
-						// await player.save();
-						// console.log(`Saved ${playerName} with new cleared mods`);
+						await player.save();
 					}
 				}
-
-				// Something something shoutout if player has more cleared mods in a tier than needed for role(+)
 			}
-			// 	}),
-			// );
 		} catch (e) {
-			// await errorChannel.send(e.message);
-			console.log(e);
+			console.error(e);
 		}
-		// } else {
-		// 	await errorChannel.send('Too many players to fetch data for at once.');
 	}
-
-	// process.exit();
 }
 
-// function getModData(sheetName, modValues) {
-// 	let tierName = '';
-// 	let sideMap = new Map();
-
-// 	for (let i = 3; i < modValues[0].length; i++) {
-// 		const modName = modValues[0][i] ?? null;
-
-// 		if (!modName) continue;
-
-// 		if (modName.includes(' Challenges - Clear Any ')) {
-// 			const nameSplit = modName.split(' Challenges - Clear Any ');
-// 			// const color = rowData[i + 1].values[0]?.effectiveFormat.backgroundColor;
-// 			// const colorPlus = rowValues[0]?.effectiveFormat.backgroundColor;
-
-// 			tierName = nameSplit[0].trim().toString();
-// 			sideMap.set(tierName, []);
-
-// 			continue;
-// 		} else if (
-// 			tierName !== '' &&
-// 			!modName.includes(
-// 				`${sheetName === 'Catstare' ? 'Catstare' : tierName} Total (Out of `,
-// 			)
-// 		) {
-// 			sideMap.get(tierName).push(modName);
-// 		}
-// 	}
-
-// 	return sideMap;
-// }
-
 async function prepareShoutouts(player, tiers, sideName) {
-	console.log(`Getting shoutout data for ${player.name}`);
-
-	const existingPlayer = shoutoutMap.get(player.name);
+	const existingPlayer = shoutoutMap.has(player.name);
 	if (!existingPlayer) {
 		shoutoutMap.set(player.name, []);
 	}
@@ -485,7 +506,6 @@ async function prepareShoutouts(player, tiers, sideName) {
 			});
 
 			if (clearedMods >= tier.modCount) {
-				// return true
 				player.roles.push(
 					`${tier.name}+ ${sideName}`,
 					`${tier.name} ${sideName}`,
@@ -497,39 +517,76 @@ async function prepareShoutouts(player, tiers, sideName) {
 
 				tier.firstPlus = false;
 				tier.first = false;
-				// return { name: tier.name, plus: true };
 			} else if (
 				clearedMods >= tier.requiredClears &&
 				clearedMods < tier.modCount
 			) {
-				// return false
 				player.roles.push(`${tier.name} ${sideName}`);
 				playerMap.push({ first: tier.first, role: `${tier.name} ${sideName}` });
 
 				tier.first = false;
-				// return { name: tier.name, plus: false };
 			}
 		} catch (e) {
 			console.error(e);
 		}
 	}
+
+	// if (playerMap.length === 0) shoutoutMap.delete(player.name);
 }
 
-async function shoutouts(client) {
-	const guild =
-		client.guilds.cache.get('773124995684761630') ??
-		(await client.guilds.fetch('773124995684761630')); // Get CSR server from cache
+async function shoutouts(client, test = false) {
+	const guild = test
+		? client.guilds.cache.get('773124995684761630') ??
+		  (await client.guilds.fetch('773124995684761630')) // Get Testing server if test = true
+		: client.guilds.cache.get('927897210471989270') ??
+		  (await client.guilds.fetch('927897210471989270')); // Get CSR server if test = false
 
-	const shoutoutChannel =
-		guild.channels.cache.get('1224754665363738645') ??
-		(await guild.channels.fetch('1224754665363738645')); // CSR shoutout channel
+	const shoutoutChannel = test
+		? guild.channels.cache.get('1224754665363738645') ??
+		  (await guild.channels.fetch('1224754665363738645')) // Get Testing shoutout channel if test = true
+		: guild.channels.cache.get('927897791932542986') ??
+		  (await guild.channels.fetch('927897791932542986')); // Get CSR shoutout channel if test = false
 
-	console.log(shoutoutMap);
+	const errorChannel = test
+		? guild.channels.cache.get('1225142448737620124') ??
+		  (await guild.channels.fetch('1225142448737620124')) // Get Testing shoutout channel if test = true
+		: guild.channels.cache.get('1358900120321654925') ??
+		  (await guild.channels.fetch('1358900120321654925')); // Get CSR shoutout channel if test = false
 
 	for (const [name, player] of shoutoutMap.entries()) {
 		for (let i = 0; i < player.length; i++) {
 			let plus = false;
 			const roleData = player[i];
+
+			let playerRoles = [];
+
+			try {
+				// Attempt to get roles from the cache
+				const cachedRoles = guild.roles.cache.filter((role) =>
+					player.some(
+						(roleData) => roleData.role && role.name === roleData.role,
+					),
+				);
+
+				// If all roles are found in the cache, use them
+				if (cachedRoles.size === player.length) {
+					playerRoles = cachedRoles.map((role) => [role.name, role.id]); // Extract only the role IDs and names
+				} else {
+					// Fetch all roles from the guild if some are missing in the cache
+					const roles = await guild.roles.fetch();
+
+					// Match roles with the player's roles
+					playerRoles = roles
+						.filter((role) =>
+							player.some(
+								(roleData) => roleData.role && role.name === roleData.role,
+							),
+						)
+						.map((role) => [role.name, role.id]); // Extract only the role IDs
+				}
+			} catch (e) {
+				console.error(`Error fetching roles for ${name}:`, e);
+			}
 
 			if (
 				roleData.role.includes('+') &&
@@ -545,20 +602,71 @@ async function shoutouts(client) {
 				i++;
 			}
 
-			await shoutoutChannel.send(
-				`Congrats to our ${roleData.first ? 'first' : 'newest'} ${
-					roleData.role
-				}${
-					plus && roleData.first && !player[i].first
-						? ` (and our newest ${player[i].role})`
-						: plus
-						? ` (and ${player[i].role})`
-						: ''
-				} rank, ${name}!`,
-			);
+			try {
+				const shoutoutMessage = await shoutoutChannel.send(
+					`**Congrats to our ${roleData.first ? 'first' : 'newest'} ${
+						roleData.role
+					}${
+						plus && roleData.first && !player[i].first
+							? ` (and our newest ${player[i].role})`
+							: plus
+							? ` (and ${player[i].role})`
+							: ''
+					} rank, ${name}!**`,
+				);
+
+				try {
+					const editedMessage = `**Congrats to our ${
+						roleData.first ? 'first' : 'newest'
+					} <@&${playerRoles.find((role) => role[0] === roleData.role)[1]}>${
+						plus && roleData.first && !player[i].first
+							? ` (and our newest <@&${
+									playerRoles.find((role) => role[0] === player[i].role)[1]
+							  }>)`
+							: plus
+							? ` (and <@&${
+									playerRoles.find((role) => role[0] === player[i].role)[1]
+							  }>)`
+							: ''
+					} rank, ${name}!**`;
+
+					await retry(() => shoutoutMessage.edit(editedMessage));
+				} catch (e) {
+					await errorChannel.send(
+						`Error editing shoutout message: https://discord.com/channels/${guild.id}/${shoutoutChannel.id}/${shoutoutMessage.id}`,
+					);
+					console.error(
+						`Error editing message for ${name} with ${roleData.role}`,
+					);
+				}
+			} catch (e) {
+				await errorChannel.send(
+					`Error sending shoutout message for ${name} with the roles: ${player.join(
+						', ',
+					)}`,
+				);
+				console.error(
+					`Error sending shoutout message for ${name} with the roles: ${player.join(
+						', ',
+					)}`,
+				);
+			}
 		}
 
 		shoutoutMap.delete(name); // Remove the player from the map after processing
+	}
+}
+
+// Utility function to retry a promise-returning function
+async function retry(fn, retries = 3, delay = 1000) {
+	for (let i = 0; i < retries; i++) {
+		try {
+			return await fn();
+		} catch (error) {
+			if (i === retries - 1) throw error;
+			console.log(`Retrying... (${i + 1}/${retries})`);
+			await new Promise((res) => setTimeout(res, delay));
+		}
 	}
 }
 

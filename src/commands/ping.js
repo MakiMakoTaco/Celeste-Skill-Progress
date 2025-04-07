@@ -6,12 +6,14 @@ module.exports = {
 	run: async ({ interaction, client }) => {
 		const sent = await interaction.reply({
 			content: 'Pinging...',
-			fetchReply: true,
+			withResponsee: true,
 		});
+
+		console.log(sent);
 
 		interaction.editReply(
 			`Roundtrip latency: ${
-				sent.createdTimestamp - interaction.createdTimestamp
+				sent.readyTimestamp - interaction.createdTimestamp
 			}ms\n${
 				client.ws.ping != -1
 					? `Websocket heartbeat: ${client.ws.ping}ms`

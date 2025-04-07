@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -9,7 +9,7 @@ module.exports = {
 		interaction.reply({
 			content:
 				'https://discord.com/oauth2/authorize?client_id=1207183419096961074&permissions=275146656832&scope=bot',
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 };

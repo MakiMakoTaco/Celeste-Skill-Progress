@@ -54,6 +54,7 @@ process.on('unhandledRejection', (reason, promise) => {
 			client,
 			commandsPath: path.join(__dirname, 'commands'),
 			eventsPath: path.join(__dirname, 'events'),
+			validationsPath: path.join(__dirname, 'validations'),
 			devGuildIds: ['773124995684761630'],
 			devUserIds: ['442795347849379879'],
 			bulkRegister: true,

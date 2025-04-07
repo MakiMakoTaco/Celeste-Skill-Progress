@@ -10,8 +10,8 @@ module.exports = {
 		await interaction.deferReply();
 
 		try {
-			await getSheetData();
-			await shoutouts(client);
+			await getSheetData(true);
+			await shoutouts(client, true);
 
 			await interaction.editReply('Shoutouts sucessful');
 		} catch (e) {
