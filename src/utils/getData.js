@@ -647,8 +647,6 @@ async function prepareShoutouts(player, tiers, sideName) {
 }
 
 async function shoutouts(client, test = false) {
-	console.log('Doing shoutouts');
-
 	if (shoutoutMap.size <= 0) return;
 
 	const guild = test
