@@ -5,8 +5,6 @@ module.exports = async (client) => {
 
 	while (client) {
 		try {
-			console.log(test, 'Starting shoutouts');
-
 			await getSheetData();
 			await shoutouts(client, test);
 		} catch (e) {
