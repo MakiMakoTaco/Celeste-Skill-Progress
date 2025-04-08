@@ -3,7 +3,7 @@ const { getSheetData, shoutouts } = require('../../utils/getData');
 module.exports = async (client) => {
 	const test = client.user.id !== '1207183419096961074';
 
-	while (client) {
+	const runShoutouts = async () => {
 		try {
 			await getSheetData();
 			await shoutouts(client, test);
@@ -24,5 +24,11 @@ module.exports = async (client) => {
 
 			await errorChannel.send(`Error running shoutouts: ${e.message}`);
 		}
+	};
+
+	// Run shoutouts immediately and then schedule the next run after it finishes
+	while (true) {
+		await runShoutouts();
+		await new Promise((resolve) => setTimeout(resolve, 60 * 60 * 1000)); // Wait 1 hour
 	}
 };
