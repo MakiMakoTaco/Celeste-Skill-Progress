@@ -527,7 +527,9 @@ async function getPlayerData(side, tiers, players) {
 
 			for (let j = 0; j < data.length; j++) {
 				const rowData = data[j].rowData;
-				const playerName = rowData[1]?.values[0]?.formattedValue;
+				if (!rowData[1].values) continue;
+
+				const playerName = rowData[1].values[0]?.formattedValue;
 
 				if (playerName) {
 					const player =
@@ -645,6 +647,8 @@ async function prepareShoutouts(player, tiers, sideName) {
 }
 
 async function shoutouts(client, test = false) {
+	console.log('Doing shoutouts');
+
 	if (shoutoutMap.size <= 0) return;
 
 	const guild = test

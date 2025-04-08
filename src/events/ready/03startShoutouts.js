@@ -1,10 +1,12 @@
 const { getSheetData, shoutouts } = require('../../utils/getData');
 
 module.exports = async (client) => {
-	const test = client.user.id === '1207183419096961074';
+	const test = client.user.id !== '1207183419096961074';
 
 	while (client) {
 		try {
+			console.log(test, 'Starting shoutouts');
+
 			await getSheetData();
 			await shoutouts(client, test);
 		} catch (e) {
