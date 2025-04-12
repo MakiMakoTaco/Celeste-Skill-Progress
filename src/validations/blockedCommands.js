@@ -8,6 +8,7 @@ const allowedCommands = [
 	'invite',
 	'ping',
 	'quick-installer',
+	'kill',
 ];
 const { MessageFlags } = require('discord.js');
 
