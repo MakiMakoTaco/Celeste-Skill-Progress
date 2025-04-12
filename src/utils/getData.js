@@ -41,7 +41,7 @@ const spreadsheetFields =
 // 	return `#${r}${g}${b}`;
 // }
 
-async function getSheetData() {
+async function getSheetData(fast = false) {
 	try {
 		const sheetNames = await sheetsAPI.spreadsheets.get({
 			spreadsheetId,
@@ -71,6 +71,7 @@ async function getSheetData() {
 						: sheetName === 'Archived'
 						? 1001
 						: i + 1,
+					fast,
 				);
 			} else {
 				// Existing side
@@ -617,24 +618,27 @@ async function prepareShoutouts(player, tiers, sideName) {
 			});
 
 			// If the sheetName is "Catstare", push roles without the sheetName part
-			if (clearedMods >= tier.modCount) {
-				player.roles.push(
-					`${tier.name}+${sideName === 'Catstare' ? '' : ` ${sideName}`}`,
-				);
+			const rolePlus = `${tier.name}+${
+				sideName === 'Catstare' ? '' : ` ${sideName}`
+			}`;
+			if (clearedMods >= tier.modCount && !player.roles.includes(rolePlus)) {
+				player.roles.push(rolePlus);
 				playerMap.push({
 					first: tier.firstPlus,
-					role: `${tier.name}+${sideName === 'Catstare' ? '' : ` ${sideName}`}`,
+					role: rolePlus,
 				});
 
 				tier.firstPlus = false;
 			}
-			if (clearedMods >= tier.requiredClears) {
-				player.roles.push(
-					`${tier.name}${sideName === 'Catstare' ? '' : ` ${sideName}`}`,
-				);
+
+			const role = `${tier.name}${
+				sideName === 'Catstare' ? '' : ` ${sideName}`
+			}`;
+			if (clearedMods >= tier.requiredClears && !player.roles.includes(role)) {
+				player.roles.push(role);
 				playerMap.push({
 					first: tier.first,
-					role: `${tier.name}${sideName === 'Catstare' ? '' : ` ${sideName}`}`,
+					role: role,
 				});
 
 				tier.first = false;
@@ -684,7 +688,7 @@ async function shoutouts(client, test = false) {
 				);
 
 				// If all roles are found in the cache, use them
-				if (cachedRoles.size === player.length) {
+				if (cachedRoles.size === roleData.length) {
 					playerRoles = cachedRoles.map((role) => [role.name, role.id]); // Extract only the role IDs and names
 				} else {
 					// Fetch all roles from the guild if some are missing in the cache
