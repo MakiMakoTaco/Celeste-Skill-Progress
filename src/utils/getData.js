@@ -563,8 +563,9 @@ async function getPlayerData(side, tiers, players) {
 
 								if (
 									mod &&
-									!player.clearedMods.includes(
-										(clearedMod) => clearedMod.modId == mod._id,
+									!player.clearedMods.some(
+										(clearedMod) =>
+											clearedMod.modId.toString() === mod._id.toString(),
 									)
 								) {
 									newClearedMods = true;
@@ -618,22 +619,22 @@ async function prepareShoutouts(player, tiers, sideName) {
 			// If the sheetName is "Catstare", push roles without the sheetName part
 			if (clearedMods >= tier.modCount) {
 				player.roles.push(
-					`${tier.name}+${sideName === 'Catstare' ? '' : sideName}`,
+					`${tier.name}+${sideName === 'Catstare' ? '' : ` ${sideName}`}`,
 				);
 				playerMap.push({
 					first: tier.firstPlus,
-					role: `${tier.name}+${sideName === 'Catstare' ? '' : sideName}`,
+					role: `${tier.name}+${sideName === 'Catstare' ? '' : ` ${sideName}`}`,
 				});
 
 				tier.firstPlus = false;
 			}
 			if (clearedMods >= tier.requiredClears) {
 				player.roles.push(
-					`${tier.name}${sideName === 'Catstare' ? '' : sideName}`,
+					`${tier.name}${sideName === 'Catstare' ? '' : ` ${sideName}`}`,
 				);
 				playerMap.push({
 					first: tier.first,
-					role: `${tier.name}${sideName === 'Catstare' ? '' : sideName}`,
+					role: `${tier.name}${sideName === 'Catstare' ? '' : ` ${sideName}`}`,
 				});
 
 				tier.first = false;
