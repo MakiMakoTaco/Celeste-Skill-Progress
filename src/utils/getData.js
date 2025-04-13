@@ -287,7 +287,11 @@ async function sortData(sheetData, sheetOrder, fast = false) {
 						const clears = tierClears[tierId];
 
 						// If the sheetName is "Archived", push roles without the sheetName part
-						if (sheetName === 'Archived' || sheetName === 'Catstare') {
+						if (
+							sheetName === 'Archived' ||
+							sheetName === 'Catstare' ||
+							sheetName === 'DLC'
+						) {
 							if (clears >= tierItem.min) {
 								player.roles.push(`${tierItem.name}`);
 							}
@@ -619,7 +623,7 @@ async function prepareShoutouts(player, tiers, sideName) {
 
 			// If the sheetName is "Catstare", push roles without the sheetName part
 			const rolePlus = `${tier.name}+${
-				sideName === 'Catstare' ? '' : ` ${sideName}`
+				sideName === 'Catstare' || sideName === 'DLC' ? '' : ` ${sideName}`
 			}`;
 			if (clearedMods >= tier.modCount && !player.roles.includes(rolePlus)) {
 				player.roles.push(rolePlus);
@@ -632,7 +636,7 @@ async function prepareShoutouts(player, tiers, sideName) {
 			}
 
 			const role = `${tier.name}${
-				sideName === 'Catstare' ? '' : ` ${sideName}`
+				sideName === 'Catstare' || sideName === 'DLC' ? '' : ` ${sideName}`
 			}`;
 			if (clearedMods >= tier.requiredClears && !player.roles.includes(role)) {
 				player.roles.push(role);
