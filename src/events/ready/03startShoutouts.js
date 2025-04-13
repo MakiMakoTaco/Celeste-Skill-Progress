@@ -5,7 +5,7 @@ module.exports = async (client) => {
 
 	const test = client.user.id !== '1207183419096961074';
 
-	const interval = 60000; // Run every 60 seconds
+	const interval = 30 * 60 * 1000; // Run every 30 minutes
 
 	// Function to handle the shoutouts process
 	const runShoutouts = async () => {
