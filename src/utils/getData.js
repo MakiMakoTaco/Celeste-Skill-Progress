@@ -85,7 +85,15 @@ async function getSheetData(fast = false) {
 						tier.modCount = await Mods.countDocuments({ 'tier.id': tier.id }); // Update the modCount field
 						tier.first = !Boolean(
 							await Players.findOne({
-								roles: { $in: `${tier.name} ${side.name}` },
+								roles: {
+									$in: `${
+										sheetName === 'Archived' ||
+										sheetName === 'Catstare' ||
+										sheetName === 'DLC'
+											? `${tier.name}`
+											: `${tier.name}+ ${side.name}`
+									}`,
+								},
 							}),
 						);
 
@@ -94,7 +102,15 @@ async function getSheetData(fast = false) {
 						} else {
 							tier.firstPlus = !Boolean(
 								await Players.findOne({
-									roles: { $in: `${tier.name}+ ${side.name}` },
+									roles: {
+										$in: `${
+											sheetName === 'Archived' ||
+											sheetName === 'Catstare' ||
+											sheetName === 'DLC'
+												? `${tier.name}`
+												: `${tier.name}+ ${side.name}`
+										}`,
+									},
 								}),
 							);
 						}
