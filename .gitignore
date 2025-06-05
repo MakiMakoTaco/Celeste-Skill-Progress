@@ -3,7 +3,7 @@
 csrCredentials.json
 
 # Website stuff
-maps.json
+sqlFiles/
 
 # node_modules
 node_modules

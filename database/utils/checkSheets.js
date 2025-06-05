@@ -1,4 +1,6 @@
 // Import required modules
+const fs = require('fs');
+const path = require('path');
 const { google } = require('googleapis');
 
 // Create Google Sheets API client
@@ -13,6 +15,16 @@ const spreadsheetId = '1XTAL3kgpX0bG6SBfznPX8z7Qdb7lGnQRuxeUfPZMFoU';
 // Define the fields to be fetched from the spreadsheet
 const spreadsheetFields =
 	'sheets(properties(title,sheetId,index,gridProperties(rowCount,columnCount)),data.rowData.values(formattedValue,effectiveFormat.backgroundColor,note,hyperlink))';
+
+function formatEpochToSQLDate(epochSeconds) {
+	const date = new Date(epochSeconds * 1000);
+	const pad = (n) => n.toString().padStart(2, '0');
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+		date.getDate(),
+	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+		date.getSeconds(),
+	)}`;
+}
 
 function rgbToHex(color) {
 	const { red, green, blue } = color;
@@ -35,7 +47,7 @@ function rgbToHex(color) {
 	return `#${r}${g}${b}`;
 }
 
-async function getSheetData() {
+async function getSheetData(filePath) {
 	try {
 		const sheetNames = await sheetsAPI.spreadsheets.get({
 			spreadsheetId,
@@ -47,6 +59,9 @@ async function getSheetData() {
 		for (let i = 0; i < sheetNames.data.sheets.length; i++) {
 			const sheetName = sheetNames.data.sheets[i].properties.title;
 
+			console.log(sheetName);
+			if (sheetName !== 'D-Side') continue;
+
 			const fileInfo = await sheetsAPI.spreadsheets.get({
 				spreadsheetId,
 				ranges: `${sheetName}`,
@@ -55,6 +70,18 @@ async function getSheetData() {
 			});
 
 			await sortData(fileInfo.data.sheets[0]);
+
+			console.log(
+				`All data in sheet ${sheetName} processed successfully. Creating SQL statements...`,
+			);
+
+			createSQLStatements(filePath);
+
+			tierMap.clear();
+			modMap.clear();
+			playerProgress.clear();
+
+			return;
 		}
 
 		return;
@@ -64,7 +91,9 @@ async function getSheetData() {
 	}
 }
 
-let sideMap = new Map();
+const noGBMod = [];
+
+let submitterMap = new Map();
 
 let tierMap = new Map();
 let tierId = 0;
@@ -73,6 +102,7 @@ let modMap = new Map();
 let modId = 1;
 
 let playerProgress = new Map();
+let playerId = 1;
 
 async function sortData(sheetData) {
 	const sheetName = sheetData.properties.title;
@@ -124,59 +154,16 @@ async function sortData(sheetData) {
 			for (let index = 1; index < rowValues.length; index++) {
 				const playerName = rowValues[index]?.formattedValue;
 
-				const dupeNames = [
-					'maskos37' /** Maskos37 */,
-					'Hikarirom' /** HikariRom */,
-					'Vikram' /** VIkram */,
-					'kem' /** Kem */,
-					'Sammysam' /** SammySam */,
-				];
-				// // Below are [side & catstare, dlc]
-				// const monitor = ['Monitor', 'monitor' /** catstare name */];
-				// const rocketguy2 = ['rocketguy2', 'Rocketguy2'];
-				// const evelyncubes = ['evelyncubes', 'EvelynCubes'];
-				// const kauan_cpi = ['Kauan_cpi', 'kauan_cpi'];
-
-				const extraNames = [
-					'monitor',
-					'Rocketguy2',
-					'EvelynCubes',
-					'kauan_cpi',
-				];
-
 				if (playerName) {
-					let name = playerName;
-
-					if (dupeNames.includes(playerName)) {
-						name = '';
-					}
-
-					if (extraNames.includes(playerName)) {
-						switch (playerName) {
-							case 'monitor':
-								name = 'Monitor';
-								break;
-							case 'Rocketguy2':
-								name = 'rocketguy2';
-								break;
-							case 'EvelynCubes':
-								name = 'evelyncubes';
-								break;
-							case 'kauan_cpi':
-								name = 'Kauan_cpi';
-								break;
-						}
-					}
-
-					userIndex.push(name);
+					userIndex.push(playerName);
 				}
 			}
 
-			userIndex.forEach((user) => {
-				if (user !== '') {
-					if (!playerProgress.has(user)) {
-						playerProgress.set(user, {
-							playerId: playerProgress.size + 1,
+			userIndex.forEach((username) => {
+				if (username !== '') {
+					if (!playerProgress.has(username)) {
+						playerProgress.set(username, {
+							playerId: playerId++,
 							mods: [],
 						});
 					}
@@ -185,22 +172,59 @@ async function sortData(sheetData) {
 
 			continue;
 		} else if (modName.includes(' Challenges - Clear Any ')) {
-			if (sideId === 1000 && (tierId < 100000 || tierId >= 101000)) {
-				tierId = 100000;
-			} else if (sideId > 1000 && tierId < 101000) {
-				tierId = 101000;
-			} else {
-				++tierId;
-			}
-
 			const nameSplit = modName.split(' Challenges - Clear Any ');
 			const color = rowData[i + 1].values[0]?.effectiveFormat.backgroundColor;
 			const colorPlus = rowValues[0]?.effectiveFormat.backgroundColor;
 
 			tierName = nameSplit[0].trim().toString();
 
+			if (sheetName === 'DLC' || sheetName === 'Archived') {
+				switch (tierName) {
+					case 'DLC 1':
+						tierId = 101000;
+						break;
+					case 'DLC 2':
+						tierId = 101001;
+						break;
+					case 'DLC 3':
+						tierId = 101002;
+						break;
+					case 'DLC 4':
+						tierId = 101003;
+						break;
+					case 'DLC 5':
+						tierId = 101004;
+						break;
+					case 'DLC 6':
+						tierId = 101005;
+						break;
+					case 'DLC 7':
+						tierId = 101006;
+						break;
+					case 'DLC 8':
+						tierId = 101007;
+						break;
+					case 'DLC 9':
+						tierId = 101008;
+						break;
+					case 'DLC 10':
+						tierId = 101009;
+						break;
+					case 'DLC 11':
+						tierId = 101010;
+						break;
+					case 'DLC 12':
+						tierId = 101011;
+						break;
+				}
+			} else if (sideId === 1000 && (tierId < 100000 || tierId >= 101000)) {
+				tierId = 100000;
+			} else {
+				++tierId;
+			}
+
 			tierMap.set(tierId, {
-				tierName,
+				name: tierName,
 				color: JSON.stringify(color) !== '{}' ? rgbToHex(color) : '#000000',
 				colorPlus:
 					JSON.stringify(colorPlus) !== '{}' ? rgbToHex(colorPlus) : '#000000',
@@ -216,18 +240,23 @@ async function sortData(sheetData) {
 				`${sheetName === 'Catstare' ? 'Catstare' : tierName} Total (Out of `,
 			)
 		) {
-			continue;
+			return;
+			// continue;
 		}
 
 		for (let index = 1; index < rowValues.length; index++) {
 			const playerName = userIndex[index - 1];
+			const cleared = Boolean(rowValues[index]?.formattedValue);
+
+			if (!playerName) continue;
 
 			const player = playerProgress.get(playerName);
 
-			if (player) {
+			if (player && cleared) {
 				player.mods.push({
 					modId,
 					cleared: Boolean(rowValues[index]?.formattedValue),
+					proof: rowValues[index]?.hyperlink ?? null,
 				});
 			}
 		}
@@ -241,25 +270,83 @@ async function sortData(sheetData) {
 				continue;
 			} else {
 				console.log(e);
-				process.exit();
 			}
 		}
-
-		modId++;
 	}
+
+	// console.log(`${noGBMod.length} mods without GameBanana link found.`);
+	// if (noGBMod.length > 0) {
+	// 	console.log('Mods without GameBanana link:');
+
+	// 	noGBMod.forEach((mod) => {
+	// 		console.log(
+	// 			`Mod ID: ${mod.modId}, Name: ${
+	// 				mod.name
+	// 			}, Download Links: ${mod.downloadLinks.join(', ')}`,
+	// 		);
+	// 	});
+	// }
+	// return;
 }
 
 async function getModData(cellData) {
+	const name = cellData?.formattedValue.replaceAll("'", "\\'");
 	const link = cellData?.hyperlink;
-	const notes = cellData?.notes;
+	const notes = cellData?.note?.replaceAll("'", "\\'") ?? null;
 
-	if (!link) throw new Error('No link in cell');
+	if (!link) {
+		modMap.set(modId, {
+			tierId,
+			name,
+			notes,
+			downloadLinks: [],
+		});
 
-	const linkSplit = link.replace('//', '/').split('/');
+		noGBMod.push({
+			tierId,
+			modId,
+			name,
+			downloadLinks: [],
+		});
 
-	if (linkSplit[1] !== 'gamebanana.com') {
-		console.log(link);
-		process.exit();
+		modId++;
+		return;
+	}
+
+	const linkSplit = link?.replace('//', '/').split('/');
+
+	if (!link || linkSplit[1] !== 'gamebanana.com') {
+		modMap.set(modId, {
+			tierId,
+			name,
+			gbName: null,
+			isChild: false,
+			parentId: null,
+			submitterId: null,
+			category: null,
+			version: null,
+			gbPage: null,
+			gbDownloadPage: null,
+			description: null,
+			text: null,
+			media: null,
+			tags: null,
+			feedbackInstructions: null,
+			notes,
+			createdAt: null,
+			downloadLinks: null,
+			// authors: [{}],
+		});
+
+		noGBMod.push({
+			tierId,
+			modId,
+			name,
+			downloadLinks: [link],
+		});
+
+		modId++;
+		return;
 	}
 
 	const requestOptions = {
@@ -267,24 +354,73 @@ async function getModData(cellData) {
 		redirect: 'follow',
 	};
 
+	const parentId = modId;
+	const modIds = [];
+
 	if (linkSplit[2] === 'mods') {
-		const url = `https://gamebanana.com/apiv11/Mod/${linkSplit[3]}/ProfilePage`;
+		modIds.push(linkSplit[3]);
+	} else {
+		let page = 0;
+		let hasNextPage = true;
+
+		const profileUrl = `https://gamebanana.com/apiv11/Collection/${linkSplit[3]}/ProfilePage`;
+		const profileResult = await fetch(profileUrl, requestOptions);
+		const profileJson = await profileResult.json();
+
+		sortModData(profileJson, name, notes, false, null, true);
+
+		// modMap.set(modId, {
+		// 	tierId,
+		// 	name,
+		// 	gbName: profileJson._sName.replaceAll("'", "\\'"),
+		// 	notes,
+		// 	gbPage: profileJson._sProfileUrl,
+		// 	createdAt: profileJson._tsDateAdded,
+		// });
+		modId++;
+
+		while (hasNextPage) {
+			page++;
+
+			console.log(`Fetching page ${page} for collection ${linkSplit[3]}`);
+
+			const url = `https://gamebanana.com/apiv11/Collection/${linkSplit[3]}/Items?_nPage=${page}`;
+			const collectionResult = await fetch(url, requestOptions);
+			const resultJson = await collectionResult.json();
+
+			resultJson._aRecords.forEach((item) => {
+				if (item._sModelName !== 'Mod') {
+					console.log(
+						`Skipping item with model name: ${item._sModelName}. Name of item: ${item._sName}`,
+					);
+				} else {
+					modIds.push(item._sProfileUrl.replace('//', '/').split('/')[3]);
+				}
+			});
+
+			hasNextPage = !resultJson._aMetadata._bIsComplete;
+		}
+	}
+
+	const modIdLength = modIds.length;
+
+	for (let i = 0; i < modIds.length; i++) {
+		const id = modIds[i];
+
+		const url = `https://gamebanana.com/apiv11/Mod/${id}/ProfilePage`;
 		const modResult = await fetch(url, requestOptions);
 
 		const resultJson = await modResult.json();
 
-		sortModData(resultJson, notes);
-	} else {
-		const url = `https://gamebanana.com/apiv11/Collection/${linkSplit[3]}/Items`;
-		const collectionResult = await fetch(url, requestOptions);
-		const resultJson = await collectionResult.json();
+		sortModData(
+			resultJson,
+			name,
+			modIdLength === 1 ? cellData?.notes : null,
+			modIdLength > 1,
+			modIdLength > 1 ? parentId : null,
+		);
 
-		const parentMap = new Map([modId]);
-
-		resultJson._aRecords.forEach((item) => {
-			mod++;
-			sortModData(item, null, true, parentMod.id);
-		});
+		modId++;
 	}
 
 	/**
@@ -304,8 +440,18 @@ async function getModData(cellData) {
 }
 
 // change input data after changing above function
-function sortModData(modData, notes, isChild = false, parentId = null) {
+function sortModData(
+	modData,
+	name,
+	notes,
+	isChild = false,
+	parentId = null,
+	isParent = false,
+) {
 	let mod = {
+		tierId,
+		name: isChild ? null : name,
+		gbName: null,
 		isChild,
 		parentId,
 		submitterId: null,
@@ -320,65 +466,172 @@ function sortModData(modData, notes, isChild = false, parentId = null) {
 		feedbackInstructions: null,
 		notes,
 		createdAt: null,
-		// downloadLinks: [],
-		// modSubmitter: {
-		// 	submitterId: null,
-		// 	submitterName: null,
-		// 	profileUrl: null,
-		// 	avatarUrl: null,
-		// },
+		downloadLinks: [],
 		// authors: [{}],
 	};
 
-	// const submitter = modData._aSubmitter;
+	const submitter = modData._aSubmitter;
+	const submitterExists = submitterMap.has(submitter._sName);
 
-	// mod.modSubmitter.submitterName = submitter._sName;
-	// mod.modSubmitter.profileUrl = submitter._sProfileUrl;
-	// mod.modSubmitter.avatarUrl = submitter._sAvatarUrl;
+	if (!submitterExists) {
+		submitterMap.set(submitter._sName, {
+			submitterId: submitterMap.size + 1,
+			profileUrl: submitter._sProfileUrl,
+			avatarUrl: submitter._sAvatarUrl,
+		});
+	}
 
-	mod.category = modData._aCategory._sName;
+	mod.gbName = modData._sName.replaceAll("'", "\\'");
+	mod.submitterId = submitterMap.get(submitter._sName).submitterId;
+	mod.category = modData?._aCategory?._sName.replaceAll("'", "\\'") ?? null;
 	mod.version = modData._sVersion;
 	mod.gbPage = modData._sProfileUrl;
-	mod.gbDownloadPage = modData._sDownloadUrl;
-	mod.description = modData._sDescription;
-	mod.text = modData._sText;
-	mod.createdAt = modData._tsDateAdded;
+	mod.gbDownloadPage = modData?._sDownloadUrl ?? null;
+	mod.description = modData._sDescription?.replaceAll("'", "\\'") ?? null;
+	mod.text = modData._sText?.replaceAll("'", "\\'") ?? null;
+	mod.createdAt = modData._tsDateAdded
+		? formatEpochToSQLDate(modData._tsDateAdded)
+		: null;
 
-	mod.media = modData._aEmbeddedMedia ?? [];
-	for (let i = 0; i < modData._aPreviewMedia._aImages.length; i++) {
-		const images = modData._aPreviewMedia._aImages[i];
+	if (!isParent) {
+		mod.media = modData._aEmbeddedMedia ?? [];
+		for (let i = 0; i < modData._aPreviewMedia._aImages.length; i++) {
+			const images = modData._aPreviewMedia._aImages[i];
 
-		mod.media.push(`${images._sBaseUrl}/${images._sFile}`);
+			mod.media.push(`${images._sBaseUrl}/${images._sFile}`);
+		}
+		if (mod.media.length === 0) mod.media = null;
 	}
 
 	if (modData._aTags.length > 0) {
 		modData._aTags.forEach((tag) => {
-			mod.tags.push(tag._sValue);
+			mod.tags.push(tag._sValue.replaceAll("'", "\\'"));
 		});
 	}
+	if (mod.tags.length === 0) mod.tags = null;
 
 	if (modData._sFeedbackInstructions) {
-		mod.feedbackInstructions = modData._sFeedbackInstructions;
+		mod.feedbackInstructions =
+			modData._sFeedbackInstructions.replaceAll("'", "\\'") ?? null;
 	}
 
-	for (let i = 0; i < modData._aFiles.length; i++) {
-		const file = modData._aFiles[i];
+	if (modData._aFiles && modData._aFiles.length > 0) {
+		for (let i = 0; i < modData._aFiles.length; i++) {
+			const file = modData._aFiles[i];
 
-		mod.downloadLinks.push({
-			modId,
-			orderIndex: mod.downloadLinks.length,
-			fileName: file._sFile,
-			fileSize: file._nFilesize,
-			description: file._sDescription,
-			manualUrl: file._sDownloadUrl,
-			everestUrl: file._aModManagerIntegrations[0]._sDownloadUrl,
-		});
+			mod.downloadLinks.push({
+				orderIndex: mod.downloadLinks.length,
+				fileName: file._sFile,
+				fileSize: file._nFilesize,
+				description: file._sDescription,
+				manualUrl: file._sDownloadUrl,
+				everestUrl: file._aModManagerIntegrations?.[0]._sDownloadUrl,
+			});
+		}
 	}
 
 	modMap.set(modId, mod);
 }
 
-// function createSQLStatements() {}
+function createSQLStatements(filePath = path.join(__dirname, '../sqlFiles')) {
+	if (noGBMod.length > 0) {
+		noGBMod.forEach((mod) => {
+			fs.appendFileSync(
+				path.join(filePath, 'no_gb_mods.txt'),
+				`Tier ID: ${mod.tierId}, Mod ID: ${mod.modId}, Name: ${
+					mod.name
+				}, Download Links: ${mod.downloadLinks.join(', ')}\n`,
+			);
+		});
+	}
+
+	tierMap.forEach((tier, tierId) => {
+		fs.appendFileSync(
+			path.join(filePath, 'tiers.sql'),
+			`,\n(${tierId}, '${tier.name}', '${tier.color}', '${tier.colorPlus}', ${tier.clearsForRank}, ${tier.sideId}, ${tier.sideIndex})`,
+		);
+	});
+
+	modMap.forEach((mod, modId) => {
+		fs.appendFileSync(
+			path.join(filePath, 'mod_tiers.sql'),
+			`,\n(${modId}, ${mod.tierId})`,
+		);
+
+		// Simplified mods.sql insert with additional fields, using null for empty values and quoting literals
+		fs.appendFileSync(
+			path.join(filePath, 'mods.sql'),
+			`,\n(${modId}, ${mod.name ? `'${mod.name}'` : null}, ${
+				mod.gbName ? `'${mod.gbName}'` : null
+			}, ${mod.isChild ? 1 : 0}, ${
+				mod.parentId !== null ? mod.parentId : null
+			}, ${mod.submitterId !== null ? mod.submitterId : null}, ${
+				mod.category ? `'${mod.category}'` : null
+			}, ${mod.version ? `'${mod.version}'` : null}, ${
+				mod.gbPage ? `'${mod.gbPage}'` : null
+			}, ${mod.gbDownloadPage ? `'${mod.gbDownloadPage}'` : null}, ${
+				mod.description ? `'${mod.description}'` : null
+			}, ${mod.text ? `'${mod.text}'` : null}, ${
+				Array.isArray(mod.media) && mod.media.length
+					? `'${mod.media.join(' ')}'`
+					: null
+			}, ${
+				Array.isArray(mod.tags) && mod.tags.length
+					? `'${mod.tags.join(', ')}'`
+					: null
+			}, ${
+				mod.feedbackInstructions ? `'${mod.feedbackInstructions}'` : null
+			}, ${mod.notes ? `'${mod.notes}'` : null}, ${
+				mod.createdAt ? `'${mod.createdAt}'` : null
+			})`,
+		);
+
+		// Write download links for this mod
+		if (Array.isArray(mod.downloadLinks)) {
+			if (mod.downloadLinks.length > 0) {
+				mod.downloadLinks.forEach((link) => {
+					fs.appendFileSync(
+						path.join(filePath, 'download_links.sql'),
+						`,\n(${modId}, ${link.orderIndex}, ${
+							link.fileName ? `'${link.fileName}'` : null
+						}, ${
+							link.fileSize !== null && link.fileSize !== undefined
+								? link.fileSize
+								: null
+						}, ${link.description ? `'${link.description}'` : null}, '${
+							link.manualUrl
+						}', ${link.everestUrl ? `'${link.everestUrl}'` : null})`,
+					);
+				});
+			}
+		}
+	});
+
+	submitterMap.forEach((submitter, submitterName) => {
+		fs.appendFileSync(
+			path.join(filePath, 'mod_submitter.sql'),
+			`,\n(${submitter.submitterId}, '${submitterName}', '${submitter.profileUrl}', '${submitter.avatarUrl}')`,
+		);
+	});
+
+	playerProgress.forEach((player, playerName) => {
+		fs.appendFileSync(
+			path.join(filePath, 'players.sql'),
+			`,\n(${player.playerId}, '${playerName}')`,
+		);
+
+		if (player.mods && player.mods.length > 0) {
+			player.mods.forEach((mod) => {
+				fs.appendFileSync(
+					path.join(filePath, 'player_progress.sql'),
+					`,\n(${player.playerId}, ${mod.modId}, ${mod.cleared ? 1 : 0}, '${
+						mod.proof
+					}', null)`,
+				);
+			});
+		}
+	});
+}
 
 // /**
 //  * Finds the maps and category totals in the spreadsheet.
