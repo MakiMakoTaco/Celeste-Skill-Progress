@@ -91,7 +91,7 @@ async function getSheetData(fast = false) {
 										sheetName === 'Catstare' ||
 										sheetName === 'DLC'
 											? `${tier.name}`
-											: `${tier.name}+ ${side.name}`
+											: `${tier.name} ${side.name}`
 									}`,
 								},
 							}),
@@ -107,7 +107,7 @@ async function getSheetData(fast = false) {
 											sheetName === 'Archived' ||
 											sheetName === 'Catstare' ||
 											sheetName === 'DLC'
-												? `${tier.name}`
+												? `${tier.name}+`
 												: `${tier.name}+ ${side.name}`
 										}`,
 									},
