@@ -3,6 +3,7 @@
 csrCredentials.json
 
 # Website stuff
+sql/
 sqlFiles/
 
 # node_modules

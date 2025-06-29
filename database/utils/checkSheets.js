@@ -59,9 +59,6 @@ async function getSheetData(filePath) {
 		for (let i = 0; i < sheetNames.data.sheets.length; i++) {
 			const sheetName = sheetNames.data.sheets[i].properties.title;
 
-			console.log(sheetName);
-			if (sheetName !== 'D-Side') continue;
-
 			const fileInfo = await sheetsAPI.spreadsheets.get({
 				spreadsheetId,
 				ranges: `${sheetName}`,
@@ -79,9 +76,10 @@ async function getSheetData(filePath) {
 
 			tierMap.clear();
 			modMap.clear();
-			playerProgress.clear();
-
-			return;
+			playerProgress.forEach((player) => {
+				player.mods = [];
+			});
+			lastPlayerId = playerId;
 		}
 
 		return;
@@ -103,6 +101,7 @@ let modId = 1;
 
 let playerProgress = new Map();
 let playerId = 1;
+let lastPlayerId = 0;
 
 async function sortData(sheetData) {
 	const sheetName = sheetData.properties.title;
@@ -240,8 +239,7 @@ async function sortData(sheetData) {
 				`${sheetName === 'Catstare' ? 'Catstare' : tierName} Total (Out of `,
 			)
 		) {
-			return;
-			// continue;
+			continue;
 		}
 
 		for (let index = 1; index < rowValues.length; index++) {
@@ -450,7 +448,7 @@ function sortModData(
 ) {
 	let mod = {
 		tierId,
-		name: isChild ? null : name,
+		name: isChild ? 'null' : name,
 		gbName: null,
 		isChild,
 		parentId,
@@ -470,19 +468,27 @@ function sortModData(
 		// authors: [{}],
 	};
 
-	const submitter = modData._aSubmitter;
-	const submitterExists = submitterMap.has(submitter._sName);
+	let submitterId = null;
 
-	if (!submitterExists) {
-		submitterMap.set(submitter._sName, {
-			submitterId: submitterMap.size + 1,
-			profileUrl: submitter._sProfileUrl,
-			avatarUrl: submitter._sAvatarUrl,
-		});
+	try {
+		const submitter = modData._aSubmitter;
+		const submitterExists = submitterMap.has(submitter._sName);
+
+		if (!submitterExists) {
+			submitterMap.set(submitter._sName, {
+				submitterId: submitterMap.size + 1,
+				profileUrl: submitter._sProfileUrl,
+				avatarUrl: submitter._sAvatarUrl,
+			});
+		}
+
+		submitterId = submitterMap.get(submitter._sName).submitterId;
+	} catch (e) {
+		console.error(`Error processing submitter data for ${name}`);
 	}
 
 	mod.gbName = modData._sName.replaceAll("'", "\\'");
-	mod.submitterId = submitterMap.get(submitter._sName).submitterId;
+	mod.submitterId = submitterId;
 	mod.category = modData?._aCategory?._sName.replaceAll("'", "\\'") ?? null;
 	mod.version = modData._sVersion;
 	mod.gbPage = modData._sProfileUrl;
@@ -503,7 +509,7 @@ function sortModData(
 		if (mod.media.length === 0) mod.media = null;
 	}
 
-	if (modData._aTags.length > 0) {
+	if (modData._aTags && modData._aTags?.length > 0) {
 		modData._aTags.forEach((tag) => {
 			mod.tags.push(tag._sValue.replaceAll("'", "\\'"));
 		});
@@ -615,10 +621,12 @@ function createSQLStatements(filePath = path.join(__dirname, '../sqlFiles')) {
 	});
 
 	playerProgress.forEach((player, playerName) => {
-		fs.appendFileSync(
-			path.join(filePath, 'players.sql'),
-			`,\n(${player.playerId}, '${playerName}')`,
-		);
+		if (player.playerId >= lastPlayerId) {
+			fs.appendFileSync(
+				path.join(filePath, 'players.sql'),
+				`,\n(${player.playerId}, '${playerName}')`,
+			);
+		}
 
 		if (player.mods && player.mods.length > 0) {
 			player.mods.forEach((mod) => {
