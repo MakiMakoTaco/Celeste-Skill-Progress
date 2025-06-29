@@ -1,4 +1,5 @@
 const allowedCommands = [
+	'submissions'
 	'create-jsons',
 	'get-data',
 	'reload',
