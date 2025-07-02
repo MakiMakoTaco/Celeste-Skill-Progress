@@ -52,7 +52,7 @@ async function getSheetData(fast = false) {
 			const sheet = sheetNames.data.sheets[i];
 			const sheetName = sheet.properties.title;
 
-			if (sheetName === 'DLC') continue;
+			if (sheetName === 'DLC' || sheetName === 'Archived') continue;
 
 			const side = await Sides.findOne({ name: sheetName }, '_id name');
 
