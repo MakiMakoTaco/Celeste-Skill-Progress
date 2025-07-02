@@ -51,6 +51,9 @@ async function getSheetData(fast = false) {
 		for (let i = 0; i < sheetNames.data.sheets.length; i++) {
 			const sheet = sheetNames.data.sheets[i];
 			const sheetName = sheet.properties.title;
+
+			if (sheetName === 'DLC') continue;
+
 			const side = await Sides.findOne({ name: sheetName }, '_id name');
 
 			if (!side) {
