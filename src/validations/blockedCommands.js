@@ -10,6 +10,7 @@ const allowedCommands = [
 	'ping',
 	'quick-installer',
 	'kill',
+	'the-frog-color',
 ];
 const { MessageFlags } = require('discord.js');
 
