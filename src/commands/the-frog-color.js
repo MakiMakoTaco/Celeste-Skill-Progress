@@ -14,8 +14,9 @@ module.exports = {
 					{ name: 'Yellow', value: 'yellow' },
 					{ name: 'Green', value: 'green' },
 					{ name: 'Blue', value: 'blue' },
-					{ name: 'Purple', value: 'purple' },
+					{ name: 'Violet', value: 'violet' },
 					{ name: 'Black', value: 'black' },
+					{ name: 'White', value: 'white' },
 				)
 				.setRequired(true),
 		),
@@ -24,7 +25,15 @@ module.exports = {
 		const guildId = interaction.guild?.id;
 		const memberRoles = interaction.member.roles;
 
-		const colorOptions = ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple'];
+		const colorOptions = [
+			'Red',
+			'Orange',
+			'Yellow',
+			'Blue',
+			'Violet',
+			'Black',
+			'White',
+		];
 
 		// Check if the command is used in the specified server
 		if (guildId !== '773124995684761630' && guildId !== '927897210471989270') {
@@ -49,10 +58,10 @@ module.exports = {
 			frogRegex.test(r.name),
 		);
 
-		if (color === 'black') {
+		if (color === 'green') {
 			if (!existingFrogRole) {
 				return interaction.reply({
-					content: `Your The Frog role is already black.`,
+					content: `Your The Frog role is already green.`,
 					ephemeral: true,
 				});
 			} else {
@@ -64,7 +73,7 @@ module.exports = {
 			}
 
 			return interaction.reply({
-				content: `Your The Frog role color has been changed to black.`,
+				content: `Your The Frog role color has been changed to green.`,
 				ephemeral: true,
 			});
 		}
