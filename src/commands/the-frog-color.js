@@ -15,7 +15,7 @@ module.exports = {
 					{ name: 'Green', value: 'green' },
 					{ name: 'Blue', value: 'blue' },
 					{ name: 'Violet', value: 'violet' },
-					{ name: 'Black', value: 'black' },
+					{ name: 'Black', value: 'original' },
 					{ name: 'White', value: 'white' },
 				)
 				.setRequired(true),
@@ -31,7 +31,7 @@ module.exports = {
 			'Yellow',
 			'Blue',
 			'Violet',
-			'Black',
+			'Original',
 			'White',
 		];
 
