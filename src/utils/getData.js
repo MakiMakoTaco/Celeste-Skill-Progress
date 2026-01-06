@@ -54,6 +54,7 @@ async function getSheetData(fast = false) {
 
 			if (
 				sheetName === 'Welcome & Rules' ||
+				sheetName === 'Catstare' ||
 				sheetName === 'DLC' ||
 				sheetName === 'Archived'
 			)
@@ -72,7 +73,9 @@ async function getSheetData(fast = false) {
 
 				await sortData(
 					sheetInfo.data.sheets[0],
-					sheetName === 'Catstare'
+					sheetName === 'Super-Side'
+						? 0
+						: sheetName === 'Catstare'
 						? 100
 						: sheetName === 'DLC'
 						? 1000

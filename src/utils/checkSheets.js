@@ -387,7 +387,11 @@ async function getUsersData(file, sheetValues, defaultData) {
 				}
 
 				// Push sheet data to existing user
-				if (!sheetName.includes('Archived') && !sheetName.includes('DLC')) {
+				if (
+					!sheetName.includes('Super-Side') &&
+					!sheetName.includes('Archived') &&
+					!sheetName.includes('DLC')
+				) {
 					usersData[existingUserIndex].totalClears += totalSheetClears;
 				}
 				usersData[existingUserIndex].totalClearsIncludingArchived +=
