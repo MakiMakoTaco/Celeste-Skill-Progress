@@ -1,3 +1,5 @@
+# Everything needs to change, if you fancy helping with this and want to contact me, please do so on Discord: `hyrulemaki`
+
 # Getting data logic is being re-written
 
 ## Things to do:
